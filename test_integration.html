@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebAI Claude Integration Test</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { 
+            color: #333; 
+            text-align: center;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        
+        .chat-container {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            height: 300px;
+            overflow-y: auto;
+            background: #f9f9f9;
+        }
+        
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .message.user {
+            background: #007bff;
+            color: white;
+            text-align: right;
+        }
+        .message.ai {
+            background: #e9ecef;
+            color: #333;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 WebAI Claude Integration Test</h1>
+        
+        <div id="status" class="status info">準備中...</div>
+        
+        <div class="chat-container" id="chatContainer">
+            <div class="message info">WebAIとClaudeの統合テストへようこそ！</div>
+        </div>
+        
+        <div class="input-group">
+            <input type="text" id="messageInput" placeholder="メッセージを入力..." value="こんにちは！プログラミングについて教えてください。">
+            <button id="sendBtn" onclick="sendMessage()">送信</button>
+        </div>
+        
+        <hr style="margin: 20px 0;">
+        
+        <h3>テスト手順</h3>
+        <ol>
+            <li><button onclick="testDirectAPI()">1. API直接テスト</button></li>
+            <li><button onclick="loginToWebAI()">2. WebAIにログイン</button></li>
+            <li><button onclick="connectWebSocket()">3. WebSocket接続</button></li>
+        </ol>
+    </div>
+    
+    <script>
+        let socket = null;
+        let isConnected = false;
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function addMessage(content, type = 'info') {
+            const container = document.getElementById('chatContainer');
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = content;
+            container.appendChild(message);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        async function testDirectAPI() {
+            updateStatus('APIを直接テスト中...', 'info');
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                if (data.claude_available) {
+                    updateStatus(`API正常: Claude ${data.claude_version}`, 'success');
+                    
+                    // Test message
+                    const msgResponse = await fetch('http://localhost:8000/message', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({content: 'テスト'})
+                    });
+                    
+                    const reader = msgResponse.body.getReader();
+                    const decoder = new TextDecoder();
+                    
+                    while (true) {
+                        const {done, value} = await reader.read();
+                        if (done) break;
+                        const chunk = decoder.decode(value);
+                        console.log('API Response:', chunk);
+                    }
+                } else {
+                    updateStatus('Claude APIが利用できません', 'error');
+                }
+            } catch (error) {
+                updateStatus(`APIエラー: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loginToWebAI() {
+            updateStatus('WebAIにログイン中...', 'info');
+            try {
+                const response = await fetch('https://your-domain.com/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'WebAI@2024SecurePass!'
+                    })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    updateStatus('ログイン成功！', 'success');
+                } else {
+                    updateStatus('ログイン失敗', 'error');
+                }
+            } catch (error) {
+                updateStatus(`ログインエラー: ${error.message}`, 'error');
+            }
+        }
+        
+        function connectWebSocket() {
+            updateStatus('WebSocket接続中...', 'info');
+            
+            socket = io('https://your-domain.com', {
+                transports: ['websocket'],
+                withCredentials: true
+            });
+            
+            socket.on('connect', () => {
+                isConnected = true;
+                updateStatus('WebSocket接続成功！', 'success');
+                addMessage('チャットを開始できます。', 'info');
+            });
+            
+            socket.on('stream_chunk', (data) => {
+                console.log('Chunk received:', data);
+                if (data.chunk) {
+                    // Update last AI message or create new one
+                    const messages = document.querySelectorAll('.message.ai');
+                    const lastMessage = messages[messages.length - 1];
+                    if (lastMessage && lastMessage.dataset.streaming) {
+                        lastMessage.textContent = data.chunk;
+                    } else {
+                        const msg = document.createElement('div');
+                        msg.className = 'message ai';
+                        msg.dataset.streaming = 'true';
+                        msg.textContent = data.chunk;
+                        document.getElementById('chatContainer').appendChild(msg);
+                    }
+                }
+            });
+            
+            socket.on('stream_complete', () => {
+                console.log('Stream complete');
+                const messages = document.querySelectorAll('.message.ai');
+                const lastMessage = messages[messages.length - 1];
+                if (lastMessage) {
+                    delete lastMessage.dataset.streaming;
+                }
+            });
+            
+            socket.on('error', (data) => {
+                console.error('Socket error:', data);
+                addMessage(`エラー: ${data.error}`, 'error');
+            });
+            
+            socket.on('disconnect', () => {
+                isConnected = false;
+                updateStatus('WebSocket切断', 'error');
+            });
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message || !isConnected) {
+                updateStatus('メッセージを入力してください。WebSocketが接続されていることを確認してください。', 'error');
+                return;
+            }
+            
+            // Add user message
+            addMessage(message, 'user');
+            
+            // Send via WebSocket
+            socket.emit('message', {
+                message: message,
+                model: 'claude-3-5-haiku-20241022',
+                web_search: false
+            });
+            
+            // Clear input
+            input.value = '';
+        }
+        
+        // Enter key support
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+        
+        // Auto-run tests
+        window.onload = async () => {
+            await testDirectAPI();
+        };
+    </script>
+</body>
+</html>

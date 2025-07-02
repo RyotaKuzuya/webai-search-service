@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.http.conf:/etc/nginx/nginx.conf:ro
+      - ./backend/static:/usr/share/nginx/html:ro
+    depends_on:
+      - webapp
+    restart: unless-stopped
+    networks:
+      - webai-network
+
+  webapp:
+    build: ./backend
+    expose:
+      - "5000"
+    env_file:
+      - .env
+    volumes:
+      - ./claude-config:/home/app/.config/claude:rw
+      - ./logs:/app/logs:rw
+    restart: unless-stopped
+    networks:
+      - webai-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  claude-api:
+    build: ./claude-api
+    expose:
+      - "8000"
+    environment:
+      - MOCK_MODE=true
+    restart: unless-stopped
+    networks:
+      - webai-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  webai-network:
+    driver: bridge
+
+volumes:
+  claude-config:
+  logs:

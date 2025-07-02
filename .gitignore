@@ -1,0 +1,96 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Authentication data
+claude-config/
+claude-home/
+*.tmp
+auth_code.tmp
+
+# Certificates
+certbot/
+*.pem
+*.key
+*.crt
+
+# Logs
+logs/
+*.log
+*.out
+*.err
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+venv_local/
+env/
+ENV/
+.venv
+
+# Flask
+instance/
+.webassets-cache
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Session files
+sessions/
+flask_session/
+
+# Temporary files
+*.cache
+
+# Node (for claude-code)
+node_modules/
+npm-debug.log*
+
+# Config files with sensitive data
+config.py
+secrets.py
+
+# Docker volumes
+data/
+volumes/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg

@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+
+{% block title %}WebAI - Chat{% endblock %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <div class="w-64 bg-bg-secondary border-r border-border-primary flex flex-col">
+        <!-- New Chat Button -->
+        <div class="p-4">
+            <button id="newChatBtn" class="w-full flex items-center gap-3 px-4 py-3 bg-bg-primary hover:bg-bg-secondary 
+                                             border border-border-primary rounded-lg transition-colors">
+                <i class="fas fa-plus text-text-secondary"></i>
+                <span class="font-medium">新しいチャット</span>
+            </button>
+        </div>
+        
+        <!-- Chat History -->
+        <div class="flex-1 overflow-y-auto scrollbar-thin px-4">
+            <div class="space-y-2">
+                <div class="text-xs font-medium text-text-secondary uppercase tracking-wider mb-2">今日</div>
+                <div class="px-3 py-2 hover:bg-bg-primary rounded-lg cursor-pointer transition-colors">
+                    <div class="text-sm truncate">WebAIの使い方について</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Menu -->
+        <div class="border-t border-border-primary p-4">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-white text-sm"></i>
+                    </div>
+                    <span class="text-sm font-medium">{{ username }}</span>
+                </div>
+                <button id="themeToggle" class="text-text-secondary hover:text-text-primary transition-colors">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+            <button id="logoutBtn" class="w-full text-left text-sm text-text-secondary hover:text-text-primary transition-colors">
+                <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Chat Area -->
+    <div class="flex-1 flex flex-col">
+        <!-- Header with Model Selector -->
+        <div class="bg-bg-primary border-b border-border-primary px-6 py-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-xl font-semibold">WebAI Chat</h1>
+                <div class="flex items-center gap-4">
+                    <!-- Model Selector -->
+                    <div class="relative">
+                        <select id="modelSelector" 
+                                class="px-4 py-2 bg-bg-secondary border border-border-primary rounded-lg 
+                                       text-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                            <option value="claude-opus-4-20250514" selected>Claude Opus 4 (最高性能)</option>
+                            <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (バランス)</option>
+                            <option value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</option>
+                            <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (高速)</option>
+                        </select>
+                    </div>
+                    <!-- Search Toggle -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-text-secondary">Web検索</label>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="webSearchToggle" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 
+                                        peer-focus:ring-primary/25 rounded-full peer 
+                                        peer-checked:after:translate-x-full peer-checked:after:border-white 
+                                        after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
+                                        after:bg-white after:border-gray-300 after:border after:rounded-full 
+                                        after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Messages Area -->
+        <div id="messagesContainer" class="flex-1 overflow-y-auto scrollbar-thin">
+            <div class="max-w-4xl mx-auto px-4 py-8">
+                <!-- Welcome Message -->
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-robot text-white text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-2">WebAIへようこそ</h2>
+                    <p class="text-text-secondary">AIとWeb検索を組み合わせて、より正確で最新の情報をお届けします</p>
+                </div>
+                
+                <!-- Example Prompts -->
+                <div class="grid md:grid-cols-2 gap-4 mb-8">
+                    <button class="example-prompt text-left p-4 bg-bg-secondary hover:bg-bg-primary 
+                                   border border-border-primary rounded-lg transition-colors">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-lightbulb text-primary mt-1"></i>
+                            <div>
+                                <div class="font-medium mb-1">最新のAI技術について</div>
+                                <div class="text-sm text-text-secondary">2024年のAI技術の進歩について教えてください</div>
+                            </div>
+                        </div>
+                    </button>
+                    <button class="example-prompt text-left p-4 bg-bg-secondary hover:bg-bg-primary 
+                                   border border-border-primary rounded-lg transition-colors">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-code text-primary mt-1"></i>
+                            <div>
+                                <div class="font-medium mb-1">プログラミングの質問</div>
+                                <div class="text-sm text-text-secondary">Pythonで機械学習を始める方法を教えてください</div>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+                
+                <!-- Messages will be appended here -->
+                <div id="messages" class="space-y-6">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Input Area -->
+        <div class="border-t border-border-primary px-4 py-4">
+            <div class="max-w-4xl mx-auto">
+                <form id="chatForm" class="flex gap-3">
+                    <div class="flex-1 relative">
+                        <textarea id="messageInput" 
+                                  class="w-full px-4 py-3 pr-12 bg-bg-secondary border border-border-primary 
+                                         rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary
+                                         text-text-primary placeholder-text-secondary"
+                                  placeholder="メッセージを入力してください..."
+                                  rows="1"
+                                  style="min-height: 48px; max-height: 200px;"></textarea>
+                        <button type="submit" 
+                                class="absolute right-2 bottom-2 p-2 bg-primary hover:bg-green-600 
+                                       text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+                <div class="text-xs text-text-secondary text-center mt-2">
+                    WebAIは間違いを犯す可能性があります。重要な情報は確認してください。
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Templates -->
+<template id="userMessageTemplate">
+    <div class="flex gap-3">
+        <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-user text-white text-sm"></i>
+        </div>
+        <div class="flex-1">
+            <div class="font-medium mb-1">You</div>
+            <div class="prose prose-sm max-w-none text-text-primary message-content"></div>
+        </div>
+    </div>
+</template>
+
+<template id="aiMessageTemplate">
+    <div class="flex gap-3">
+        <div class="w-8 h-8 bg-bg-secondary border border-border-primary rounded-full flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-robot text-primary text-sm"></i>
+        </div>
+        <div class="flex-1">
+            <div class="font-medium mb-1">WebAI</div>
+            <div class="prose prose-sm max-w-none text-text-primary message-content"></div>
+        </div>
+    </div>
+</template>
+
+<template id="typingTemplate">
+    <div class="flex gap-3" id="typingIndicator">
+        <div class="w-8 h-8 bg-bg-secondary border border-border-primary rounded-full flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-robot text-primary text-sm"></i>
+        </div>
+        <div class="flex-1">
+            <div class="font-medium mb-1">WebAI</div>
+            <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize Socket.IO with debugging
+const socket = io({
+    transports: ['websocket'],
+    upgrade: false,
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000
+});
+
+// Debug: Log all socket events
+const originalEmit = socket.emit;
+socket.emit = function(...args) {
+    console.log('[DEBUG] Emitting:', args[0], args[1]);
+    return originalEmit.apply(socket, args);
+};
+
+const originalOn = socket.on;
+socket.on = function(event, callback) {
+    return originalOn.call(socket, event, function(...args) {
+        console.log('[DEBUG] Received event:', event, args);
+        return callback.apply(this, args);
+    });
+};
+
+// DOM elements
+const messagesContainer = document.getElementById('messages');
+const messageInput = document.getElementById('messageInput');
+const chatForm = document.getElementById('chatForm');
+const modelSelector = document.getElementById('modelSelector');
+const webSearchToggle = document.getElementById('webSearchToggle');
+const newChatBtn = document.getElementById('newChatBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const themeToggle = document.getElementById('themeToggle');
+
+// Auto-resize textarea
+messageInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = this.scrollHeight + 'px';
+});
+
+// Theme toggle
+themeToggle.addEventListener('click', () => {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    // Update icon
+    themeToggle.innerHTML = newTheme === 'dark' ? 
+        '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+});
+
+// Load saved theme
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+themeToggle.innerHTML = savedTheme === 'dark' ? 
+    '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+
+// Example prompts
+document.querySelectorAll('.example-prompt').forEach(button => {
+    button.addEventListener('click', () => {
+        const promptText = button.querySelector('.text-sm').textContent;
+        messageInput.value = promptText;
+        messageInput.focus();
+        messageInput.style.height = 'auto';
+        messageInput.style.height = messageInput.scrollHeight + 'px';
+    });
+});
+
+// New chat
+newChatBtn.addEventListener('click', () => {
+    // Clear chat display
+    messagesContainer.innerHTML = `
+        <div class="text-center text-text-secondary py-8">
+            <i class="fas fa-comments text-4xl mb-4 opacity-50"></i>
+            <p>新しいチャットを開始しました</p>
+        </div>
+    `;
+    
+    // Clear input
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    messageInput.focus();
+    
+    // Reset AI message buffer
+    currentAiMessage = '';
+    
+    console.log('New chat started');
+});
+
+// Logout
+logoutBtn.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login';
+});
+
+// Add message to chat
+function addMessage(content, type) {
+    // Remove welcome message if exists
+    const welcomeMessage = messagesContainer.querySelector('.text-center');
+    if (welcomeMessage) {
+        welcomeMessage.remove();
+    }
+    
+    // Remove example prompts
+    const examplePrompts = messagesContainer.parentElement.querySelector('.grid');
+    if (examplePrompts) {
+        examplePrompts.remove();
+    }
+    
+    const template = document.getElementById(`${type}MessageTemplate`);
+    const messageEl = template.content.cloneNode(true);
+    messageEl.querySelector('.message-content').textContent = content;
+    
+    messagesContainer.appendChild(messageEl);
+    messagesContainer.parentElement.scrollTop = messagesContainer.parentElement.scrollHeight;
+}
+
+// Show typing indicator
+function showTyping() {
+    const template = document.getElementById('typingTemplate');
+    const typingEl = template.content.cloneNode(true);
+    messagesContainer.appendChild(typingEl);
+    messagesContainer.parentElement.scrollTop = messagesContainer.parentElement.scrollHeight;
+}
+
+// Remove typing indicator
+function removeTyping() {
+    const typingIndicator = document.getElementById('typingIndicator');
+    if (typingIndicator) {
+        typingIndicator.remove();
+    }
+}
+
+// Update typing message with streaming content
+function updateTypingMessage(content) {
+    let typingIndicator = document.getElementById('typingIndicator');
+    if (!typingIndicator) {
+        showTyping();
+        typingIndicator = document.getElementById('typingIndicator');
+    }
+    
+    // Replace typing dots with actual content
+    const messageDiv = typingIndicator.querySelector('.typing-indicator').parentElement;
+    messageDiv.innerHTML = `<div class="whitespace-pre-wrap">${content}</div>`;
+}
+
+// Send message with debugging
+chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const message = messageInput.value.trim();
+    if (!message) return;
+    
+    console.log('[DEBUG] Sending message:', message);
+    console.log('[DEBUG] Socket connected:', socket.connected);
+    console.log('[DEBUG] Socket ID:', socket.id);
+    
+    // Add user message
+    addMessage(message, 'user');
+    
+    // Clear input
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    
+    // Show typing
+    showTyping();
+    
+    // Create message data
+    const messageData = {
+        message: message,
+        model: modelSelector.value,
+        web_search: webSearchToggle.checked
+    };
+    
+    console.log('[DEBUG] Message data:', messageData);
+    
+    // Send via Socket.IO
+    try {
+        socket.emit('message', messageData);
+        console.log('[DEBUG] Message emitted successfully');
+    } catch (error) {
+        console.error('[DEBUG] Error emitting message:', error);
+        removeTyping();
+        addMessage('Error: Failed to send message', 'ai');
+    }
+});
+
+// Socket.IO connection events with enhanced debugging
+socket.on('connect', () => {
+    console.log('[DEBUG] WebSocket connected successfully');
+    console.log('[DEBUG] Socket ID:', socket.id);
+    console.log('[DEBUG] Transport:', socket.io.engine.transport.name);
+    
+    // Test immediate ping
+    socket.emit('ping', { timestamp: Date.now() });
+});
+
+socket.on('disconnect', (reason) => {
+    console.log('[DEBUG] WebSocket disconnected:', reason);
+});
+
+socket.on('connect_error', (error) => {
+    console.error('[DEBUG] WebSocket connection error:', error.message, error.type);
+    console.error('[DEBUG] Full error:', error);
+});
+
+socket.on('reconnect', (attemptNumber) => {
+    console.log('[DEBUG] Reconnected after', attemptNumber, 'attempts');
+});
+
+socket.on('reconnect_attempt', () => {
+    console.log('[DEBUG] Attempting to reconnect...');
+});
+
+socket.on('error', (error) => {
+    console.error('[DEBUG] Socket error:', error);
+});
+
+// Socket.IO message events
+socket.on('connected', (data) => {
+    console.log('Server connected:', data.status);
+});
+
+socket.on('message_received', (data) => {
+    console.log('Message received:', data.status);
+});
+
+let currentAiMessage = '';
+let messageReceived = false;
+
+// Debug: Monitor for any socket events
+socket.onAny((event, ...args) => {
+    console.log('[DEBUG] Any event received:', event, args);
+});
+
+socket.on('stream_chunk', (data) => {
+    console.log('[DEBUG] Received stream_chunk:', data);
+    messageReceived = true;
+    
+    // Update current AI message with streaming content
+    if (data && data.chunk !== undefined) {
+        currentAiMessage = data.chunk;
+        updateTypingMessage(currentAiMessage);
+    } else {
+        console.error('[DEBUG] Invalid stream_chunk data:', data);
+    }
+});
+
+socket.on('stream_complete', (data) => {
+    console.log('[DEBUG] Stream complete:', data);
+    console.log('[DEBUG] Final message:', currentAiMessage);
+    console.log('[DEBUG] Message received flag:', messageReceived);
+    
+    // Clear the timeout since we completed successfully
+    clearTimeout(messageTimeout);
+    
+    removeTyping();
+    if (currentAiMessage) {
+        addMessage(currentAiMessage, 'ai');
+        currentAiMessage = '';
+    } else if (!messageReceived) {
+        console.error('[DEBUG] Stream completed but no message received');
+        addMessage('Error: No response received', 'ai');
+    }
+    
+    // Reset flag after processing
+    messageReceived = false;
+});
+
+socket.on('error', (data) => {
+    console.error('[DEBUG] Error event:', data);
+    removeTyping();
+    addMessage(`エラー: ${data.error || 'Unknown error'}`, 'ai');
+    currentAiMessage = '';
+    messageReceived = false;
+});
+
+// Add timeout detection
+let messageTimeout;
+function startMessageTimeout() {
+    clearTimeout(messageTimeout);
+    messageTimeout = setTimeout(() => {
+        if (!messageReceived) {
+            console.error('[DEBUG] Message timeout - no response received');
+            removeTyping();
+            addMessage('Error: Response timeout', 'ai');
+        }
+    }, 30000); // 30 second timeout
+}
+
+// Update the message event handlers
+const originalMessageReceived = socket.on('message_received');
+socket.on('message_received', (data) => {
+    console.log('[DEBUG] Message acknowledged by server:', data);
+    startMessageTimeout();
+});
+
+// Focus on input
+messageInput.focus();
+</script>
+{% endblock %}

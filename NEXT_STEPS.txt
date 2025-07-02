@@ -1,0 +1,66 @@
+WebAI Search Service - 次のステップ
+
+=====================================
+1. Claude Codeのインストールと認証
+=====================================
+# Claude Codeをインストール（未インストールの場合）
+npm install -g @anthropic-ai/claude-code
+
+# Claude認証設定
+claude login
+
+認証手順：
+1. 表示されるURLをブラウザで開く
+2. Anthropicアカウントでログイン
+3. 認証を許可
+4. 表示される認証コードをターミナルに入力
+
+=====================================
+2. 権限の設定
+=====================================
+cd /home/ubuntu/webai
+chmod +x setup-claude-api.sh
+chmod +x start-webai.sh
+chmod +x deploy.sh
+
+=====================================
+3. 環境変数の設定
+=====================================
+cp .env.example .env
+nano .env
+
+以下を設定：
+- SECRET_KEY=（32文字以上のランダムな文字列）
+- ADMIN_PASSWORD=（強力なパスワード）
+
+=====================================
+4. デプロイメントの実行
+=====================================
+cd /home/ubuntu/webai
+./deploy.sh
+
+=====================================
+5. 動作確認
+=====================================
+# サービスステータス確認
+sudo systemctl status webai
+sudo systemctl status nginx
+
+# ブラウザでアクセス
+https://your-domain.com
+
+=====================================
+重要な注意事項
+=====================================
+1. Claude Codeの認証が必要です。
+   'claude login'コマンドを実行して認証を完了させてください。
+
+2. 認証情報は ~/.config/claude/ に保存されます。
+   Dockerを使用する場合は、このディレクトリをボリュームマウントしてください。
+
+3. 初回起動時はSSL証明書が必要です。
+   既に取得済みの場合は、Nginx設定が正しいことを確認してください。
+
+4. 問題が発生した場合は、以下のログを確認：
+   - sudo journalctl -u webai -f
+   - sudo tail -f /var/log/nginx/error.log

@@ -1,0 +1,15 @@
+[Unit]
+Description=WebAI Simple App Service
+After=network.target webai-api.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/webai
+Environment="PATH=/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="SECRET_KEY=your-production-secret-key-here"
+ExecStart=/usr/bin/python3 /home/ubuntu/webai/simple_app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

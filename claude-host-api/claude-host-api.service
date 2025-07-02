@@ -1,0 +1,15 @@
+[Unit]
+Description=Claude Host API Service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/webai/claude-host-api
+Environment="PATH=/usr/bin:/bin:/home/ubuntu/.npm-global/bin"
+ExecStart=/usr/bin/python3 /home/ubuntu/webai/claude-host-api/claude_host_server.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

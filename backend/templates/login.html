@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}WebAI - Login{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center px-4 py-12">
+    <div class="max-w-md w-full space-y-8">
+        <div class="text-center">
+            <div class="flex justify-center mb-4">
+                <div class="w-16 h-16 bg-primary rounded-xl flex items-center justify-center">
+                    <i class="fas fa-robot text-white text-2xl"></i>
+                </div>
+            </div>
+            <h2 class="text-3xl font-bold">WebAI</h2>
+            <p class="mt-2 text-text-secondary">AIとWeb検索を統合した次世代チャットサービス</p>
+        </div>
+        
+        <div class="bg-bg-secondary rounded-lg shadow-lg p-8 border border-border-primary">
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium mb-2">
+                        ユーザー名
+                    </label>
+                    <input type="text" id="username" name="username" required autofocus
+                           class="w-full px-4 py-3 rounded-lg bg-bg-primary border border-border-primary 
+                                  focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
+                                  text-text-primary placeholder-text-secondary"
+                           placeholder="ユーザー名を入力">
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium mb-2">
+                        パスワード
+                    </label>
+                    <input type="password" id="password" name="password" required
+                           class="w-full px-4 py-3 rounded-lg bg-bg-primary border border-border-primary 
+                                  focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
+                                  text-text-primary placeholder-text-secondary"
+                           placeholder="パスワードを入力">
+                </div>
+                
+                <div id="errorMessage" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                </div>
+                
+                <button type="submit" 
+                        class="w-full py-3 px-4 bg-primary hover:bg-green-600 text-white font-medium 
+                               rounded-lg transition duration-200 ease-in-out transform hover:scale-[1.02]
+                               focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                    ログイン
+                </button>
+            </form>
+        </div>
+        
+        <div class="text-center text-sm text-text-secondary">
+            <p>© 2025 WebAI. All rights reserved.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const errorDiv = document.getElementById('errorMessage');
+    
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = '/chat';
+        } else {
+            errorDiv.textContent = data.error || '認証に失敗しました';
+            errorDiv.classList.remove('hidden');
+        }
+    } catch (error) {
+        errorDiv.textContent = '接続エラーが発生しました';
+        errorDiv.classList.remove('hidden');
+    }
+});
+</script>
+{% endblock %}

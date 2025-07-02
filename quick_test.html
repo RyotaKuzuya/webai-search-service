@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick WebSocket Test</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Quick Test for WebAI</h1>
+    <button onclick="quickTest()">Run Quick Test</button>
+    <pre id="output" style="background: #f0f0f0; padding: 10px; height: 400px; overflow: auto;"></pre>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg) {
+            output.textContent += msg + '\n';
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        async function quickTest() {
+            output.textContent = '';
+            log('Starting quick test...\n');
+            
+            // Step 1: Login
+            log('1. Logging in...');
+            const loginResp = await fetch('https://your-domain.com/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'include',
+                body: JSON.stringify({
+                    username: 'admin',
+                    password: 'WebAI@2024SecurePass!'
+                })
+            });
+            const loginData = await loginResp.json();
+            log(`   Result: ${JSON.stringify(loginData)}\n`);
+            
+            // Step 2: Connect WebSocket
+            log('2. Connecting WebSocket...');
+            const socket = io('https://your-domain.com', {
+                transports: ['websocket'],
+                withCredentials: true
+            });
+            
+            socket.on('connect', () => {
+                log(`   Connected! Socket ID: ${socket.id}\n`);
+                
+                // Step 3: Send message
+                log('3. Sending test message...');
+                socket.emit('message', {
+                    message: 'こんにちは',
+                    model: 'claude-opus-4-20250514',
+                    web_search: false
+                });
+                log('   Message sent\n');
+            });
+            
+            let chunks = 0;
+            socket.on('stream_chunk', (data) => {
+                chunks++;
+                log(`   Chunk ${chunks}: ${JSON.stringify(data)}`);
+            });
+            
+            socket.on('stream_complete', (data) => {
+                log(`\n4. Stream complete: ${JSON.stringify(data)}`);
+                log('\n✅ Test completed successfully!');
+                socket.disconnect();
+            });
+            
+            socket.on('error', (data) => {
+                log(`\n❌ Error: ${JSON.stringify(data)}`);
+                socket.disconnect();
+            });
+        }
+    </script>
+</body>
+</html>

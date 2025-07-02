@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Fix Test</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #log { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto; background: #f0f0f0; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .chunk { color: blue; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Fix Test for your-domain.com</h1>
+    <button onclick="runFullTest()">Run Full Test</button>
+    <button onclick="clearLog()">Clear Log</button>
+    <div id="log"></div>
+    
+    <script>
+        const log = document.getElementById('log');
+        let socket = null;
+        let testResults = {
+            login: false,
+            connect: false,
+            message: false,
+            chunks: 0,
+            complete: false,
+            error: false
+        };
+        
+        function addLog(msg, className = '') {
+            const entry = document.createElement('div');
+            entry.textContent = `${new Date().toISOString()}: ${msg}`;
+            if (className) entry.className = className;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function clearLog() {
+            log.innerHTML = '';
+            testResults = {
+                login: false,
+                connect: false,
+                message: false,
+                chunks: 0,
+                complete: false,
+                error: false
+            };
+        }
+        
+        async function runFullTest() {
+            clearLog();
+            addLog('Starting full test sequence...');
+            
+            // Step 1: Login
+            try {
+                addLog('Step 1: Logging in...');
+                const response = await fetch('https://your-domain.com/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'WebAI@2024SecurePass!'
+                    })
+                });
+                const data = await response.json();
+                testResults.login = data.status === 'success';
+                addLog(`Login result: ${JSON.stringify(data)}`, testResults.login ? 'success' : 'error');
+            } catch (error) {
+                addLog(`Login error: ${error}`, 'error');
+            }
+            
+            // Step 2: Connect WebSocket
+            addLog('Step 2: Connecting WebSocket...');
+            socket = io('https://your-domain.com', {
+                transports: ['websocket'],
+                withCredentials: true
+            });
+            
+            // Set up event handlers
+            socket.on('connect', () => {
+                testResults.connect = true;
+                addLog(`Connected! Socket ID: ${socket.id}`, 'success');
+                
+                // Step 3: Send test message after connection
+                setTimeout(() => {
+                    addLog('Step 3: Sending test message...');
+                    socket.emit('message', {
+                        message: 'テスト',
+                        model: 'claude-opus-4-20250514',
+                        web_search: false
+                    });
+                    testResults.message = true;
+                    addLog('Message sent', 'success');
+                }, 1000);
+            });
+            
+            socket.on('stream_chunk', (data) => {
+                testResults.chunks++;
+                addLog(`Chunk ${testResults.chunks}: ${JSON.stringify(data)}`, 'chunk');
+            });
+            
+            socket.on('stream_complete', (data) => {
+                testResults.complete = true;
+                addLog(`Stream complete: ${JSON.stringify(data)}`, 'success');
+                
+                // Final test results
+                setTimeout(() => {
+                    addLog('=== TEST RESULTS ===', 'success');
+                    addLog(`Login: ${testResults.login ? '✅' : '❌'}`);
+                    addLog(`WebSocket Connect: ${testResults.connect ? '✅' : '❌'}`);
+                    addLog(`Message Sent: ${testResults.message ? '✅' : '❌'}`);
+                    addLog(`Chunks Received: ${testResults.chunks} ${testResults.chunks > 0 ? '✅' : '❌'}`);
+                    addLog(`Stream Complete: ${testResults.complete ? '✅' : '❌'}`);
+                    addLog(`No Errors: ${!testResults.error ? '✅' : '❌'}`);
+                    
+                    if (testResults.login && testResults.connect && testResults.message && 
+                        testResults.chunks > 0 && testResults.complete && !testResults.error) {
+                        addLog('ALL TESTS PASSED! 🎉', 'success');
+                    } else {
+                        addLog('Some tests failed', 'error');
+                    }
+                    
+                    // Disconnect
+                    socket.disconnect();
+                }, 2000);
+            });
+            
+            socket.on('error', (data) => {
+                testResults.error = true;
+                addLog(`Error: ${JSON.stringify(data)}`, 'error');
+            });
+            
+            socket.on('disconnect', () => {
+                addLog('Disconnected');
+            });
+        }
+    </script>
+</body>
+</html>

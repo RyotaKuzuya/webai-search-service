@@ -1,0 +1,14 @@
+[Unit]
+Description=WebAI Simple API Service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/webai
+Environment="PATH=/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/usr/bin/python3 /home/ubuntu/webai/simple_api.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

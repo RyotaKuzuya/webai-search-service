@@ -1,0 +1,17 @@
+[Unit]
+Description=WebAI Health Monitor
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/webai
+ExecStart=/home/ubuntu/webai/monitor.sh
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/webai-monitor.log
+StandardError=append:/var/log/webai-monitor.log
+
+[Install]
+WantedBy=multi-user.target

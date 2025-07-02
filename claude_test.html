@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Claude Integration Test</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        h1 { color: #333; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #output { background: #f5f5f5; padding: 15px; border-radius: 5px; min-height: 200px; white-space: pre-wrap; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Claude Integration Test</h1>
+    
+    <div class="test-section">
+        <h2>1. API Direct Test</h2>
+        <button onclick="testDirectAPI()">Test Claude API Directly</button>
+        <button onclick="testWebAIAPI()">Test via WebAI</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. WebSocket Test</h2>
+        <button onclick="loginAndTest()">Login & Send Message</button>
+        <input type="text" id="testMessage" value="こんにちは、元気ですか？" style="width: 300px; padding: 5px;">
+    </div>
+    
+    <div class="test-section">
+        <h2>Output:</h2>
+        <div id="output"></div>
+    </div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg, className = '') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.textContent = `[${timestamp}] ${msg}`;
+            if (className) entry.className = className;
+            output.appendChild(entry);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+        
+        async function testDirectAPI() {
+            clearOutput();
+            log('Testing Claude API directly at localhost:8000...');
+            
+            try {
+                // Test health endpoint
+                const healthResp = await fetch('http://localhost:8000/health');
+                const health = await healthResp.json();
+                log(`Health check: ${JSON.stringify(health)}`, health.claude_available ? 'success' : 'error');
+                
+                // Test message endpoint
+                log('Sending test message...');
+                const msgResp = await fetch('http://localhost:8000/message', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({content: 'Hello, this is a test'})
+                });
+                
+                const reader = msgResp.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n').filter(line => line.trim());
+                    
+                    for (const line of lines) {
+                        try {
+                            const data = JSON.parse(line);
+                            if (data.content) {
+                                log(`Claude: ${data.content}`, 'info');
+                            } else if (data.status === 'complete') {
+                                log('Response complete', 'success');
+                            }
+                        } catch (e) {
+                            // Skip parse errors
+                        }
+                    }
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testWebAIAPI() {
+            clearOutput();
+            log('Testing via WebAI API...');
+            
+            try {
+                const resp = await fetch('https://your-domain.com/api/status');
+                const data = await resp.json();
+                log(`WebAI Status: ${JSON.stringify(data)}`, 'info');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loginAndTest() {
+            clearOutput();
+            log('Starting WebSocket test...');
+            
+            try {
+                // Step 1: Login
+                log('Logging in...');
+                const loginResp = await fetch('https://your-domain.com/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'WebAI@2024SecurePass!'
+                    })
+                });
+                const loginData = await loginResp.json();
+                log(`Login: ${loginData.status}`, loginData.status === 'success' ? 'success' : 'error');
+                
+                if (loginData.status !== 'success') return;
+                
+                // Step 2: Connect WebSocket
+                log('Connecting WebSocket...');
+                const socket = io('https://your-domain.com', {
+                    transports: ['websocket'],
+                    withCredentials: true
+                });
+                
+                socket.on('connect', () => {
+                    log('WebSocket connected!', 'success');
+                    
+                    // Send test message
+                    const message = document.getElementById('testMessage').value;
+                    log(`Sending: "${message}"`);
+                    
+                    socket.emit('message', {
+                        message: message,
+                        model: 'claude-3-5-haiku-20241022',
+                        web_search: false
+                    });
+                });
+                
+                socket.on('stream_chunk', (data) => {
+                    if (data.chunk) {
+                        log(`Claude: ${data.chunk}`, 'info');
+                    }
+                });
+                
+                socket.on('stream_complete', () => {
+                    log('Stream complete!', 'success');
+                    socket.disconnect();
+                });
+                
+                socket.on('error', (data) => {
+                    log(`Error: ${JSON.stringify(data)}`, 'error');
+                    socket.disconnect();
+                });
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

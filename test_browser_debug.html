@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebAI Debug Test</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>WebAI WebSocket Debug Test</h1>
+    <div id="log" style="border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px;"></div>
+    
+    <button onclick="connectSocket()">Connect</button>
+    <button onclick="sendMessage()">Send Test Message</button>
+    <button onclick="clearLog()">Clear Log</button>
+    
+    <script>
+        let socket = null;
+        const log = document.getElementById('log');
+        
+        function addLog(message, type = 'info') {
+            const time = new Date().toISOString().substr(11, 12);
+            const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            log.innerHTML += `<div style="color: ${color}">[${time}] ${message}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function connectSocket() {
+            addLog('Attempting to connect to WebSocket...');
+            
+            socket = io('https://your-domain.com', {
+                transports: ['websocket'],
+                upgrade: false,
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000
+            });
+            
+            // Log all events
+            socket.onAny((event, ...args) => {
+                addLog(`Event received: ${event} - ${JSON.stringify(args)}`, 'success');
+            });
+            
+            socket.on('connect', () => {
+                addLog(`Connected! Socket ID: ${socket.id}`, 'success');
+                addLog(`Transport: ${socket.io.engine.transport.name}`, 'success');
+            });
+            
+            socket.on('disconnect', (reason) => {
+                addLog(`Disconnected: ${reason}`, 'error');
+            });
+            
+            socket.on('connect_error', (error) => {
+                addLog(`Connection error: ${error.message} (${error.type})`, 'error');
+            });
+            
+            socket.on('connected', (data) => {
+                addLog(`Server acknowledgment: ${JSON.stringify(data)}`, 'success');
+            });
+            
+            socket.on('message_received', (data) => {
+                addLog(`Message acknowledged: ${JSON.stringify(data)}`, 'success');
+            });
+            
+            socket.on('stream_chunk', (data) => {
+                addLog(`Stream chunk: ${JSON.stringify(data).substr(0, 100)}...`, 'success');
+            });
+            
+            socket.on('stream_complete', (data) => {
+                addLog(`Stream complete: ${JSON.stringify(data)}`, 'success');
+            });
+            
+            socket.on('error', (data) => {
+                addLog(`Error from server: ${JSON.stringify(data)}`, 'error');
+            });
+        }
+        
+        function sendMessage() {
+            if (!socket || !socket.connected) {
+                addLog('Not connected!', 'error');
+                return;
+            }
+            
+            const messageData = {
+                message: 'Hello, this is a test message',
+                model: 'claude-opus-4-20250514',
+                web_search: false
+            };
+            
+            addLog(`Sending message: ${JSON.stringify(messageData)}`);
+            socket.emit('message', messageData);
+        }
+        
+        function clearLog() {
+            log.innerHTML = '';
+        }
+        
+        // Auto-connect on load
+        window.onload = () => {
+            connectSocket();
+        };
+    </script>
+</body>
+</html>
