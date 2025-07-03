@@ -57,13 +57,12 @@ class SimpleClaudeSession:
             full_prompt = self._build_prompt()
             
             # Determine timeout based on thinking mode
-            timeout = 180  # default
             if 'ultrathink' in message.lower():
                 timeout = 1800  # 30 minutes
             elif 'megathink' in message.lower():
                 timeout = 900   # 15 minutes
-            elif 'think' in message.lower():
-                timeout = 600   # 10 minutes
+            else:
+                timeout = 600   # 10 minutes minimum for all queries
             
             # Call Claude CLI directly with --print flag and model
             result = subprocess.run(
