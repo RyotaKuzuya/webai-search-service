@@ -5,6 +5,8 @@ on:
     types: [created]
   pull_request:
     types: [opened, synchronize]
+  push:
+    branches: [ main, master ]
   workflow_dispatch:
     inputs:
       prompt:
@@ -20,10 +22,15 @@ permissions:
 jobs:
   claude-code-action:
     runs-on: ubuntu-latest
+    # Claude Max認証で実行 - GitHub課金をバイパス
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request') ||
-      (github.event_name == 'workflow_dispatch')
+      github.repository == 'RyotaKuzuya/webai-search-service'
+    
+    # 実行時間制限
+    timeout-minutes: 5
+    
+    # エラー時も続行
+    continue-on-error: true
     
     steps:
       - name: Checkout repository

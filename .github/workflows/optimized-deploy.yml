@@ -1,0 +1,47 @@
+name: Optimized WebAI Deploy
+
+on:
+  push:
+    branches: [ master, main ]
+    # 必要なファイルが変更された時のみ実行
+    paths:
+      - '**.py'
+      - 'requirements.txt'
+      - 'templates/**'
+      - 'static/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    # セルフホストランナーを使用（設定後）
+    runs-on: self-hosted
+    # または、GitHubホストランナーを使用する場合：
+    # runs-on: ubuntu-latest
+    
+    # タイムアウトを設定して課金を防ぐ
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # 浅いクローンで時間短縮
+          fetch-depth: 1
+      
+      - name: Check services
+        run: |
+          echo "サービスの状態を確認しています..."
+          ps aux | grep -E "(simple_api|simple_app|claude_simple_session_api)" | grep -v grep || echo "一部のサービスが停止しています"
+      
+      - name: Restart services if needed
+        run: |
+          if [ -f "/home/ubuntu/webai/start_services.sh" ]; then
+            echo "サービスを再起動しています..."
+            cd /home/ubuntu/webai
+            ./start_services.sh
+          fi
+      
+      - name: Deployment notification
+        run: |
+          echo "デプロイが完了しました: $(date)"
+          echo "コミット: ${{ github.sha }}"
