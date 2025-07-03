@@ -626,12 +626,27 @@ def send_message():
             })
         else:
             conn.close()
-            return jsonify({'error': 'API error'}), 500
+            error_msg = f'API error: Status {response.status_code}'
+            try:
+                error_detail = response.json()
+                error_msg = error_detail.get('error', error_msg)
+            except:
+                error_msg = response.text or error_msg
+            logger.error(f"API returned error: {error_msg}")
+            return jsonify({'error': error_msg}), 500
             
+    except requests.exceptions.Timeout:
+        conn.close()
+        logger.error("Request timeout error")
+        return jsonify({'error': 'リクエストがタイムアウトしました。処理に時間がかかっています。'}), 504
+    except requests.exceptions.ConnectionError as e:
+        conn.close()
+        logger.error(f"Connection error: {e}")
+        return jsonify({'error': 'APIサーバーに接続できません。'}), 503
     except Exception as e:
         conn.close()
         logger.error(f"Error sending message: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': f'エラーが発生しました: {str(e)}'}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

@@ -105,10 +105,14 @@ def chat():
         })
         
     except subprocess.TimeoutExpired:
-        return jsonify({"error": "Request timeout"}), 504
+        logger.error(f"Claude CLI timeout after {timeout} seconds")
+        return jsonify({"error": "Request timeout", "message": "処理がタイムアウトしました。"}), 504
     except Exception as e:
-        logger.error(f"Error: {e}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error in chat endpoint: {e}")
+        error_message = str(e)
+        if "rate limit" in error_message.lower():
+            return jsonify({"error": "Rate limit exceeded", "message": "レート制限に達しました。しばらくお待ちください。"}), 429
+        return jsonify({"error": str(e), "message": "エラーが発生しました。"}), 500
 
 @app.route('/chat/stream', methods=['POST'])
 def chat_stream():

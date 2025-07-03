@@ -1353,7 +1353,14 @@
                 }),
                 signal: controller.signal
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 clearTimeout(timeoutId);
                 // Remove loading indicator
@@ -1377,7 +1384,11 @@
                     const minutes = Math.floor(timeoutDuration / 60000);
                     addMessageToUI('assistant', `エラーが発生しました: リクエストが${minutes}分でタイムアウトしました。\n\n対処方法:\n1. より高い思考レベル (megathink/ultrathink) を試してください\n2. 質問を分割して段階的に処理してください\n3. セッションモードを有効にしてコンテキストを保持してください`);
                 } else {
-                    addMessageToUI('assistant', 'エラーが発生しました。');
+                    let errorMessage = 'エラーが発生しました。';
+                    if (error.message) {
+                        errorMessage += ` (${error.message})`;
+                    }
+                    addMessageToUI('assistant', errorMessage);
                 }
             })
             .finally(() => {
