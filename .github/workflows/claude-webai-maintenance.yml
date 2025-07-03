@@ -1,0 +1,95 @@
+name: WebAI Maintenance with Claude
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # 毎週日曜日の0時に実行
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'メンテナンスタスク'
+        required: true
+        type: choice
+        options:
+          - 'security-check'
+          - 'dependency-update'
+          - 'code-review'
+          - 'performance-optimization'
+          - 'documentation-update'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pylint black isort safety
+          
+      - name: Security Check
+        if: github.event.inputs.task == 'security-check' || github.event_name == 'schedule'
+        run: |
+          safety check
+          
+      - name: Code Quality Check
+        run: |
+          pylint *.py --exit-zero > pylint-report.txt
+          black --check *.py || true
+          isort --check-only *.py || true
+          
+      - name: Claude Code Review
+        uses: grll/claude-code-action@beta
+        with:
+          use_oauth: true
+          claude_access_token: ${{ secrets.CLAUDE_ACCESS_TOKEN }}
+          claude_refresh_token: ${{ secrets.CLAUDE_REFRESH_TOKEN }}
+          claude_expires_at: ${{ secrets.CLAUDE_EXPIRES_AT }}
+          thinking: true
+          prompt: |
+            WebAIプロジェクトの定期メンテナンスを実行してください。
+            
+            タスク: ${{ github.event.inputs.task || 'weekly-maintenance' }}
+            
+            以下を確認してください：
+            1. セキュリティの問題
+            2. 依存関係の更新
+            3. コード品質の改善点
+            4. パフォーマンスの最適化
+            5. ドキュメントの更新
+            
+            pylint-report.txtも参照してください。
+            
+            改善が必要な場合は、PRを作成してください。
+          
+      - name: Create Issue for Manual Review
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '⚠️ メンテナンスチェックで問題が検出されました',
+              body: `
+                定期メンテナンスチェックで問題が検出されました。
+                
+                **ワークフロー実行**: ${context.runId}
+                **タスク**: ${{ github.event.inputs.task || 'weekly-maintenance' }}
+                
+                詳細はワークフローログを確認してください。
+              `,
+              labels: ['maintenance', 'automated']
+            })
