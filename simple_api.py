@@ -83,6 +83,8 @@ def chat():
             timeout = 900   # 15 minutes for megathink (10,000 tokens)
         elif 'think' in safe_prompt.lower():
             timeout = 600   # 10 minutes for basic think (4,000 tokens)
+        elif any(word in safe_prompt.lower() for word in ['ドキュメント', 'マニュアル', '文書', '印刷', 'word', 'document', 'manual']):
+            timeout = 600   # 10 minutes for document generation
         else:
             timeout = 300   # 5 minutes for standard queries
         
