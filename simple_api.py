@@ -95,7 +95,13 @@ def chat():
             response = result.stdout.strip()
         else:
             logger.error(f"Claude error: {result.stderr}")
-            response = "申し訳ございません。エラーが発生しました。"
+            error_msg = result.stderr.strip()
+            if "job was not started" in error_msg and ("payments have failed" in error_msg or "spending limit" in error_msg):
+                response = "エラー: Anthropicアカウントの支払いに問題があります。'Billing & plans'セクションで支払い情報を確認してください。"
+            elif "rate limit" in error_msg.lower():
+                response = "エラー: レート制限に達しました。しばらくお待ちください。"
+            else:
+                response = f"申し訳ございません。エラーが発生しました: {error_msg[:200]}"
         
         return jsonify({
             "id": str(uuid.uuid4()),

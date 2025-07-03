@@ -75,7 +75,13 @@ class SimpleClaudeSession:
             
             if result.returncode != 0:
                 logger.error(f"Claude error: {result.stderr}")
-                raise Exception(f"Claude CLI error: {result.stderr}")
+                error_msg = result.stderr.strip()
+                if "job was not started" in error_msg and ("payments have failed" in error_msg or "spending limit" in error_msg):
+                    raise Exception("Anthropicアカウントの支払いに問題があります。'Billing & plans'セクションで支払い情報を確認してください。")
+                elif "rate limit" in error_msg.lower():
+                    raise Exception("レート制限に達しました。しばらくお待ちください。")
+                else:
+                    raise Exception(f"Claude CLI error: {error_msg[:200]}")
             
             response = result.stdout.strip()
             
