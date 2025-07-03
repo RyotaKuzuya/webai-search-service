@@ -1,0 +1,22 @@
+#!/bin/bash
+# GitHub Actionsの状態を確認
+
+echo "📊 GitHub Actions状態確認"
+echo "========================"
+echo ""
+echo "リポジトリ: RyotaKuzuya/webai-search-service"
+echo ""
+echo "🔗 以下のURLで確認してください："
+echo "https://github.com/RyotaKuzuya/webai-search-service/actions"
+echo ""
+echo "もしエラーが続く場合は、以下をローカルで実行："
+echo ""
+echo "1) コードレビュー:"
+echo "   claude 'WebAIプロジェクトのコードレビューをしてください'"
+echo ""
+echo "2) メンテナンス:"
+echo "   claude 'requirements.txtの依存関係を最新版に更新してください'"
+echo ""
+echo "3) バグ修正:"
+echo "   claude 'simple_api.pyのエラーハンドリングを改善してください'"
+echo ""

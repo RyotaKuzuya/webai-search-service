@@ -7,6 +7,7 @@ import os
 import json
 import subprocess
 import uuid
+import shlex
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import logging
@@ -46,7 +47,7 @@ def chat():
         'opus4': 'opus',  # Opus 4
         'sonnet': 'sonnet',  # Use alias for latest
         'sonnet4': 'claude-sonnet-4-20250514',  # Sonnet 4 specific
-        'haiku': 'haiku',  # Use alias for latest
+        'haiku': 'claude-3-5-haiku-20241022',  # Use full model name instead of alias
         # Keep full names as-is
         'claude-3-5-sonnet-20241022': 'claude-3-5-sonnet-20241022',
         'claude-3-5-haiku-20241022': 'claude-3-5-haiku-20241022',
@@ -60,6 +61,20 @@ def chat():
     if not message:
         return jsonify({"error": "No message provided"}), 400
     
+    # Escape problematic patterns that can cause CLI parsing issues
+    # Replace unclosed quotes and parentheses to prevent syntax errors
+    escaped_message = message
+    # Count quotes and add closing quote if odd number
+    if escaped_message.count("'") % 2 == 1:
+        escaped_message += "'"
+    if escaped_message.count('"') % 2 == 1:
+        escaped_message += '"'
+    # Balance parentheses
+    open_parens = escaped_message.count('(')
+    close_parens = escaped_message.count(')')
+    if open_parens > close_parens:
+        escaped_message += ')' * (open_parens - close_parens)
+    
     # Add safety prompt to prevent local file operations
     safe_prompt = (
         "重要: あなたは別のPCで作業中のユーザーを支援しています。"
@@ -67,12 +82,12 @@ def chat():
         "質問に対してWeb検索や知識に基づいた回答のみを提供してください。"
         "検索結果を使用した場合は、必ず情報源のURLを明記してください。"
         "すべての応答は日本語で行ってください。\n\n"
-        f"ユーザーの質問: {message}"
+        f"ユーザーの質問: {escaped_message}"
     )
     
     try:
         # Build command with model selection
-        cmd = [CLAUDE_CLI, "--print", "--model", model, safe_prompt]
+        cmd = [CLAUDE_CLI, "--print", "--model", model]
         
         # Simply run claude --print with the message
         # Increase timeout based on thinking mode and expected processing time
@@ -84,8 +99,10 @@ def chat():
         else:
             timeout = 600   # 10 minutes minimum for all queries
         
+        # Use stdin to pass the prompt to avoid shell escaping issues
         result = subprocess.run(
             cmd,
+            input=safe_prompt,
             capture_output=True,
             text=True,
             timeout=timeout
@@ -131,7 +148,7 @@ def chat_stream():
         'opus4': 'opus',  # Opus 4
         'sonnet': 'sonnet',  # Use alias for latest
         'sonnet4': 'claude-sonnet-4-20250514',  # Sonnet 4 specific
-        'haiku': 'haiku',  # Use alias for latest
+        'haiku': 'claude-3-5-haiku-20241022',  # Use full model name instead of alias
         # Keep full names as-is
         'claude-3-5-sonnet-20241022': 'claude-3-5-sonnet-20241022',
         'claude-3-5-haiku-20241022': 'claude-3-5-haiku-20241022',
@@ -145,13 +162,26 @@ def chat_stream():
     if not message:
         return jsonify({"error": "No message provided"}), 400
     
+    # Escape problematic patterns that can cause CLI parsing issues
+    escaped_message = message
+    # Count quotes and add closing quote if odd number
+    if escaped_message.count("'") % 2 == 1:
+        escaped_message += "'"
+    if escaped_message.count('"') % 2 == 1:
+        escaped_message += '"'
+    # Balance parentheses
+    open_parens = escaped_message.count('(')
+    close_parens = escaped_message.count(')')
+    if open_parens > close_parens:
+        escaped_message += ')' * (open_parens - close_parens)
+    
     # Add safety prompt
     safe_prompt = (
         "重要: あなたは別のPCで作業中のユーザーを支援しています。"
         "このサーバーのファイルやコマンドを操作しないでください。"
         "質問に対してWeb検索や知識に基づいた回答のみを提供してください。"
         "検索結果を使用した場合は、必ず情報源のURLを明記してください。\n\n"
-        f"ユーザーの質問: {message}"
+        f"ユーザーの質問: {escaped_message}"
     )
     
     def generate():

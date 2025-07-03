@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebAI - チャット</title>
+    <title>Claude</title>
     <style>
         * {
             margin: 0;
@@ -60,17 +60,63 @@
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            overflow: hidden;
         }
         
         /* Sidebar */
         .sidebar {
-            width: 260px;
+            width: 200px;
             background-color: var(--bg-sidebar);
             color: var(--text-sidebar);
             display: flex;
             flex-direction: column;
-            transition: var(--transition);
+            transition: width 0.3s ease;
             border-right: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+        
+        .sidebar.collapsed {
+            width: 0;
+            overflow: hidden;
+        }
+        
+        .sidebar-toggle {
+            position: fixed;
+            left: 200px;
+            top: 12px;
+            width: 32px;
+            height: 32px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-md);
+        }
+        
+        body.sidebar-collapsed .sidebar-toggle {
+            left: 10px;
+        }
+        
+        .sidebar-toggle:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .sidebar-toggle:hover .sidebar-toggle-icon {
+            color: white;
+        }
+        
+        .sidebar-toggle-icon {
+            font-size: 16px;
+            color: var(--text-primary);
+            font-weight: 600;
+            transition: color 0.2s;
         }
         
         .sidebar-header {
@@ -81,7 +127,7 @@
         .new-chat-btn {
             width: 100%;
             padding: 0.875rem;
-            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            background: var(--accent-color);
             color: white;
             border: none;
             border-radius: var(--border-radius);
@@ -176,52 +222,86 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            width: 100%;
+            position: relative;
         }
         
         .header {
             background-color: var(--bg-secondary);
-            padding: 1rem 1.5rem;
+            padding: 0.5rem 0.75rem;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 0.5rem;
             transition: var(--transition);
-            backdrop-filter: blur(10px);
-            background-color: rgba(255,255,255,0.8);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            min-height: 48px;
+        }
+        
+        .header h1 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.375rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            letter-spacing: -0.025em;
+            margin: 0;
+            flex-shrink: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        .claude-logo {
+            width: 32px;
+            height: 22px;
+            color: #D97757;
+            margin-right: 0.25rem;
+        }
+        
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            flex-wrap: wrap;
         }
         
         body.dark-mode .header {
-            background-color: rgba(42,42,42,0.8);
+            background-color: var(--bg-secondary);
         }
         
         .logout-btn {
-            padding: 0.5rem 1rem;
+            padding: 0.25rem 0.5rem;
             background-color: transparent;
             color: #dc2626;
             border: 1px solid #dc2626;
-            border-radius: var(--border-radius);
+            border-radius: 6px;
             cursor: pointer;
             text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 500;
+            font-size: 0.75rem;
+            font-weight: 450;
             transition: var(--transition);
         }
         
         .logout-btn:hover {
             background-color: #dc2626;
             color: white;
-            transform: translateY(-1px);
         }
         
         .chat-container {
             flex: 1;
             overflow-y: auto;
-            padding: 2rem;
-            max-width: 800px;
-            margin: 0 auto;
+            padding: 2rem 1rem;
             width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .chat-container > * {
+            width: 100%;
+            max-width: 800px;
         }
         
         .message {
@@ -229,6 +309,8 @@
             display: flex;
             gap: 1rem;
             animation: fadeInUp 0.3s ease-out;
+            width: 100%;
+            max-width: 800px;
         }
         
         @keyframes fadeInUp {
@@ -260,7 +342,7 @@
         }
         
         .message-avatar.assistant {
-            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            background: var(--accent-color);
             color: white;
         }
         
@@ -272,12 +354,13 @@
             box-shadow: var(--shadow-sm);
             border: 1px solid var(--border-color);
             position: relative;
-            max-width: 85%;
+            max-width: 90%;
         }
         
         .message.user .message-bubble {
             background-color: var(--bg-user-message);
             margin-left: auto;
+            border: 1px solid var(--border-color);
         }
         
         .message-content {
@@ -325,31 +408,73 @@
         .input-container {
             background-color: var(--bg-primary);
             border-top: 1px solid var(--border-color);
-            padding: 1.5rem 1rem;
-            transition: var(--transition);
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .input-container.collapsed {
+            padding: 0.25rem;
+        }
+        
+        .input-container.collapsed .input-wrapper {
+            height: 40px;
+            overflow: hidden;
+        }
+        
+        .input-container.collapsed .input-controls {
+            display: none;
+        }
+        
+        .input-resize-handle {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            cursor: ns-resize;
+            background: transparent;
+            transition: background 0.2s;
+        }
+        
+        .input-resize-handle:hover {
+            background: rgba(0,0,0,0.1);
+        }
+        
+        .input-resize-handle::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 2px;
+            background: var(--border-color);
+            border-radius: 1px;
         }
         
         .input-wrapper {
-            max-width: 900px;
+            max-width: 800px;
             margin: 0 auto;
             background-color: var(--bg-input);
-            border-radius: var(--border-radius-lg);
-            border: 2px solid var(--border-color);
-            padding: 1.25rem;
-            box-shadow: var(--shadow-md);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            box-shadow: var(--shadow-sm);
             transition: var(--transition);
+            width: 100%;
         }
         
         .input-wrapper:focus-within {
             border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+            box-shadow: 0 0 0 2px rgba(16, 163, 127, 0.1);
         }
         
         .input-controls {
             display: flex;
             flex-wrap: wrap;
-            gap: 1rem;
-            margin-bottom: 1rem;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
             align-items: center;
             justify-content: space-between;
         }
@@ -387,16 +512,16 @@
         }
         
         .model-selector {
-            padding: 0.75rem 1.25rem;
+            padding: 0.375rem 0.75rem;
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
-            font-size: 0.95rem;
+            font-size: 0.8125rem;
             background-color: var(--bg-secondary);
             cursor: pointer;
             transition: var(--transition);
-            font-weight: 500;
+            font-weight: 450;
             color: var(--text-primary);
-            min-width: 180px;
+            min-width: 140px;
         }
         
         .model-selector:hover {
@@ -412,13 +537,14 @@
         .thinking-toggle {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.95rem;
+            gap: 0.375rem;
+            font-size: 0.8125rem;
             color: var(--text-secondary);
-            padding: 0.625rem 1rem;
+            padding: 0.375rem 0.625rem;
             border-radius: var(--border-radius);
             transition: var(--transition);
-            background-color: rgba(0,0,0,0.03);
+            background-color: transparent;
+            border: 1px solid var(--border-color);
         }
         
         .thinking-toggle:hover {
@@ -430,11 +556,11 @@
         }
         
         body.dark-mode .thinking-toggle {
-            background-color: rgba(255,255,255,0.03);
+            background-color: transparent;
         }
         
         body.dark-mode .session-toggle {
-            background-color: rgba(255,255,255,0.03);
+            background-color: transparent;
         }
         
         .thinking-toggle input[type="checkbox"] {
@@ -462,24 +588,25 @@
         .session-toggle {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.95rem;
+            gap: 0.25rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
-            background-color: rgba(0,0,0,0.03);
-            padding: 0.625rem 1rem;
-            border-radius: var(--border-radius);
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            padding: 0.25rem 0.375rem;
+            border-radius: 6px;
         }
         
         .session-indicator {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
+            font-size: 0.625rem;
+            padding: 0.125rem 0.25rem;
             background-color: #4CAF50;
             color: white;
             border-radius: 4px;
             display: none;
-            margin-left: 0.5rem;
+            margin-left: 0.25rem;
             font-weight: 600;
-            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+            box-shadow: 0 1px 2px rgba(76, 175, 80, 0.2);
         }
         
         .session-indicator.active {
@@ -500,12 +627,12 @@
         
         #messageInput {
             flex: 1;
-            padding: 1rem 1.25rem;
+            padding: 0.75rem 1rem;
             border: none;
             background: transparent;
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             resize: none;
-            min-height: 60px;
+            min-height: 50px;
             max-height: 300px;
             line-height: 1.6;
             font-family: inherit;
@@ -607,6 +734,9 @@
             text-align: center;
             color: #999;
             padding: 3rem;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
         }
         
         .empty-state h2 {
@@ -616,24 +746,25 @@
         
         /* Dark mode toggle */
         .action-button {
-            padding: 0.5rem 1rem;
+            padding: 0.25rem 0.5rem;
             background-color: transparent;
             color: var(--text-primary);
             border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 0.875rem;
+            font-size: 0.75rem;
             transition: var(--transition);
             display: inline-flex;
             align-items: center;
-            gap: 0.375rem;
-            font-weight: 500;
+            gap: 0.25rem;
+            font-weight: 450;
+            text-decoration: none;
+            white-space: nowrap;
         }
         
         .action-button:hover {
-            background-color: rgba(0,0,0,0.05);
-            border-color: var(--text-secondary);
-            transform: translateY(-1px);
+            background-color: rgba(0,0,0,0.03);
+            border-color: var(--accent-color);
         }
         
         body.dark-mode .action-button:hover {
@@ -714,7 +845,8 @@
         }
         
         #messageInput:focus, .model-selector:focus {
-            border-color: #4CAF50;
+            border-color: var(--accent-color);
+            outline: none;
         }
         
         /* Additional button styles */
@@ -806,9 +938,31 @@
         }
         
         /* Responsive design */
+        /* Medium screens */
+        @media (max-width: 1024px) {
+            .header {
+                padding: 0.5rem;
+            }
+            
+            .header-controls {
+                gap: 0.25rem;
+            }
+            
+            .action-button {
+                padding: 0.25rem 0.375rem;
+                font-size: 0.7rem;
+            }
+            
+            .session-toggle label {
+                display: none;
+            }
+        }
+        
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
+                overflow-y: auto;
+                height: 100vh;
             }
             
             .sidebar {
@@ -819,95 +973,262 @@
                 top: auto;
                 z-index: 1000;
                 display: none;
+                max-height: 50vh;
+                overflow-y: auto;
             }
             
             .sidebar.mobile-open {
                 display: flex;
             }
             
+            .sidebar-toggle {
+                display: none;
+            }
+            
             .main-content {
                 width: 100%;
                 margin-bottom: 0;
+                min-height: 100vh;
+                overflow: visible;
             }
             
             .header {
-                padding: 0.75rem;
+                padding: 0.5rem;
+                position: sticky;
+                top: 0;
+                z-index: 998;
+                background-color: var(--bg-secondary);
             }
             
             .header h1 {
-                font-size: 1.2rem;
-            }
-            
-            .header > div {
-                flex-direction: column;
-                gap: 0.75rem;
-                align-items: stretch;
-            }
-            
-            .input-controls {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.75rem;
-            }
-            
-            .input-area {
-                gap: 0.75rem;
-            }
-            
-            #sendButton {
-                width: 56px;
-                height: 56px;
-                padding: 1rem;
-            }
-            
-            #messageInput {
-                font-size: 1.1rem;
-                min-height: 80px;
-                padding: 1rem;
-            }
-            
-            .model-selector, .thinking-select {
-                width: 100%;
-                padding: 1rem 1.25rem;
                 font-size: 1rem;
             }
             
-            .chat-container {
-                padding: 1rem;
-                padding-bottom: 5rem;
+            .claude-logo {
+                width: 24px;
+                height: 18px;
+            }
+            
+            .header-controls {
+                gap: 0.25rem;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
             
             .action-button {
-                width: 100%;
-                text-align: center;
-                padding: 1rem;
-                font-size: 1rem;
+                padding: 0.375rem 0.5rem;
+                font-size: 0.75rem;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+            
+            .logout-btn {
+                padding: 0.375rem 0.5rem;
+                font-size: 0.75rem;
+                flex-shrink: 0;
             }
             
             .session-toggle {
+                padding: 0.375rem 0.5rem;
+                font-size: 0.75rem;
+                gap: 0.125rem;
+                flex-shrink: 0;
+            }
+            
+            .session-indicator {
+                font-size: 0.5rem;
+                padding: 0.1rem 0.2rem;
+            }
+            
+            .input-container {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                z-index: 997;
+                background-color: var(--bg-primary);
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            }
+            
+            .input-wrapper {
+                padding: 0.75rem;
+            }
+            
+            .input-controls {
+                flex-direction: row;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 0.5rem;
+                flex-wrap: wrap;
+            }
+            
+            .model-selector {
+                flex: 1;
+                min-width: 120px;
+                padding: 0.5rem 0.75rem;
+                font-size: 0.875rem;
+            }
+            
+            .thinking-toggle {
+                padding: 0.5rem;
+                font-size: 0.875rem;
+            }
+            
+            .thinking-select {
                 width: 100%;
-                justify-content: center;
+                padding: 0.75rem;
+                font-size: 0.875rem;
+                margin-top: 0.5rem;
+            }
+            
+            .input-area {
+                gap: 0.5rem;
+                align-items: flex-end;
+            }
+            
+            #sendButton {
+                width: 44px;
+                height: 44px;
+                padding: 0.75rem;
+                margin-bottom: 0;
+            }
+            
+            #sendButton svg {
+                width: 20px;
+                height: 20px;
+            }
+            
+            #messageInput {
+                font-size: 1rem;
+                min-height: 44px;
+                max-height: 120px;
+                padding: 0.75rem;
+            }
+            
+            .chat-container {
+                padding: 1rem 0.75rem;
+                padding-top: 4rem;
+                padding-bottom: 12rem;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .message {
+                margin-bottom: 1.5rem;
+                gap: 0.75rem;
+            }
+            
+            .message-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 0.75rem;
+            }
+            
+            .message-bubble {
+                padding: 0.75rem 1rem;
+                max-width: 85%;
+            }
+            
+            .message-content {
+                font-size: 0.9375rem;
+                line-height: 1.5;
+            }
+            
+            .message-content pre {
+                padding: 0.75rem;
+                font-size: 0.8125rem;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .copy-button {
+                font-size: 0.7rem;
+                padding: 0.25rem 0.375rem;
+            }
+            
+            .sources-button {
+                font-size: 0.8125rem;
+                padding: 0.25rem 0.75rem;
             }
             
             .mobile-menu-btn {
                 display: block;
                 position: fixed;
-                bottom: 1rem;
+                bottom: 10rem;
                 right: 1rem;
-                background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+                background: var(--accent-color);
                 color: white;
                 border: none;
                 border-radius: 50%;
-                width: 56px;
-                height: 56px;
-                font-size: 1.5rem;
+                width: 48px;
+                height: 48px;
+                font-size: 1.25rem;
                 box-shadow: var(--shadow-lg);
-                z-index: 999;
+                z-index: 996;
                 transition: var(--transition);
             }
             
             .mobile-menu-btn:active {
                 transform: scale(0.95);
+            }
+            
+            /* Fix modal on mobile */
+            .modal-content {
+                width: 95%;
+                margin: 2% auto;
+                padding: 1.5rem;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            
+            .status-content, .monitor-content {
+                font-size: 0.875rem;
+                max-height: 60vh;
+            }
+            
+            /* Empty state */
+            .empty-state {
+                padding: 2rem 1rem;
+                text-align: center;
+            }
+            
+            .empty-state h2 {
+                font-size: 1.25rem;
+            }
+            
+            .empty-state p {
+                font-size: 0.875rem;
+            }
+            
+            /* Fix input resize handle on mobile */
+            .input-resize-handle {
+                display: none;
+            }
+        }
+        
+        /* Extra small screens */
+        @media (max-width: 375px) {
+            .header h1 {
+                font-size: 0.875rem;
+            }
+            
+            .claude-logo {
+                width: 20px;
+                height: 14px;
+            }
+            
+            .action-button, .logout-btn {
+                padding: 0.25rem 0.375rem;
+                font-size: 0.7rem;
+            }
+            
+            #messageInput {
+                font-size: 0.9375rem;
+            }
+            
+            .message-content {
+                font-size: 0.875rem;
             }
         }
         
@@ -918,15 +1239,7 @@
         }
         
         /* Improve desktop layout */
-        @media (min-width: 1200px) {
-            .input-wrapper {
-                max-width: 1100px;
-            }
-            
-            .chat-container {
-                max-width: 1000px;
-            }
-        }
+        /* Consistent max-width for all screen sizes */
         
         /* Smooth scrolling */
         .chat-container {
@@ -1072,7 +1385,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <button class="new-chat-btn" onclick="createNewChat()">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -1089,18 +1402,23 @@
     
     <div class="main-content">
         <div class="header">
-            <h1>WebAI - Claude Code検索チャット</h1>
-            <div style="display: flex; gap: 1rem; align-items: center;">
-                <div class="button-group">
-                    <div class="session-toggle">
-                        <input type="checkbox" id="sessionMode" onchange="toggleSessionMode()" checked>
-                        <label for="sessionMode" title="永続的なセッションで真の/clearコマンドを使用">📝 セッション</label>
-                        <span id="sessionIndicator" class="session-indicator active">✓ 接続中</span>
-                    </div>
+            <h1>
+                <svg class="claude-logo" viewBox="0 0 95 65" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21.0975 29.5003L36.4899 38.3995C37.7588 39.14 39.3135 39.14 40.5824 38.3995L55.9623 29.5115C57.7841 28.4422 57.7841 25.7673 55.9623 24.698L40.5824 15.8099C39.3135 15.0695 37.7588 15.0695 36.4899 15.8099L21.0975 24.6981C19.2758 25.7674 19.2758 28.4309 21.0975 29.5003Z" fill="currentColor"/>
+                    <path d="M27.3053 46.0913L38.4416 52.5838C39.1949 53.0082 40.0903 53.0082 40.8436 52.5838L51.98 46.0913C53.0752 45.455 53.7317 44.2931 53.7317 43.0232V38.4073L39.6427 46.2104C38.1223 47.0481 36.3126 47.0481 34.7921 46.2104L20.6963 38.4073V43.0232C20.6963 44.2931 21.3527 45.455 22.4591 46.0913H27.3053Z" fill="currentColor"/>
+                    <path d="M54.7859 46.8815L39.4057 55.7584C39.2567 55.8477 39.0894 55.8969 38.9178 55.9013H38.159C37.988 55.8982 37.8211 55.8495 37.6752 55.7604L22.2827 46.8834C20.0386 45.5923 20.0386 42.2931 22.2827 41.002L28.5236 37.4943L32.7692 39.9643C36.0896 41.8942 40.0965 41.8942 43.417 39.9643L47.6606 37.4943L53.9118 41.002C56.1559 42.2931 56.1559 45.5923 53.9118 46.8834L54.7859 46.8815Z" fill="currentColor"/>
+                </svg>
+                Claude
+            </h1>
+            <div class="header-controls">
+                <div class="session-toggle">
+                    <input type="checkbox" id="sessionMode" onchange="toggleSessionMode()" checked>
+                    <label for="sessionMode" title="セッション">📝</label>
+                    <span id="sessionIndicator" class="session-indicator active" title="接続中">✓</span>
                 </div>
-                <button class="action-button clear-button" onclick="clearContext()" title="コンテキストをクリアしてレート制限を回避">🧹 /clear</button>
-                <button class="action-button status-button" onclick="showMonitor()" title="Claudeトークンモニター（Max5: 35,000トークン）">📈 ステータス</button>
-                <button class="action-button" onclick="toggleDarkMode()">🌙 ダークモード</button>
+                <button class="action-button clear-button" onclick="clearContext()" title="/clear">🧹</button>
+                <button class="action-button status-button" onclick="showMonitor()" title="ステータス">📈</button>
+                <button class="action-button" onclick="toggleDarkMode()" id="darkModeBtn" title="ダークモード">🌙</button>
                 <a href="/logout" class="logout-btn">ログアウト</a>
             </div>
         </div>
@@ -1108,12 +1426,13 @@
         <div class="chat-container" id="chatContainer">
             <div class="empty-state">
                 <h2>チャットを選択するか、新しいチャットを開始してください</h2>
-                <p>Claude Codeが最新の情報を検索してお答えします</p>
+                <p>Claudeが最新の情報を検索してお答えします</p>
                 <p style="font-size: 0.9em; color: var(--text-secondary); margin-top: 0.5rem;">✅ セッションモード有効 - 会話履歴が保持されます</p>
             </div>
         </div>
         
-        <div class="input-container">
+        <div class="input-container" id="inputContainer">
+            <div class="input-resize-handle" id="resizeHandle"></div>
             <div class="input-wrapper">
                 <div class="input-controls">
                     <select id="modelSelector" class="model-selector">
@@ -1140,14 +1459,21 @@
                         <textarea id="messageInput" placeholder="メッセージを入力してください。Web検索や情報を提供します。" rows="3"></textarea>
                     </div>
                     <button id="sendButton" onclick="sendMessage()" title="送信">
-                        <svg viewBox="0 0 24 24" fill="none">
+                        <svg id="sendIcon" viewBox="0 0 24 24" fill="none">
                             <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <svg id="stopIcon" viewBox="0 0 24 24" fill="none" style="display: none;">
+                            <rect x="6" y="6" width="12" height="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
                 </div>
             </div>
         </div>
+    </div>
+    
+    <div class="sidebar-toggle" onclick="toggleSidebar()">
+        <span class="sidebar-toggle-icon" id="sidebarToggleIcon">◀</span>
     </div>
     
     <button class="mobile-menu-btn" onclick="toggleMobileMenu()">📋</button>
@@ -1156,6 +1482,8 @@
         let currentChatId = null;
         let isLoading = false;
         let useSession = true;  // Default to session mode ON
+        let abortController = null;  // For canceling requests
+        let currentMessageId = null;  // Track current message to prevent duplicates
         
         // Load chat list on startup
         window.onload = function() {
@@ -1189,7 +1517,63 @@
             
             // Focus on input when page loads
             messageInput.focus();
+            
+            // Setup resize functionality
+            setupResizeHandle();
         };
+        
+        // Toggle sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('sidebarToggleIcon');
+            const toggle = document.querySelector('.sidebar-toggle');
+            
+            sidebar.classList.toggle('collapsed');
+            document.body.classList.toggle('sidebar-collapsed');
+            icon.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+            
+            // Move toggle button with sidebar
+            if (sidebar.classList.contains('collapsed')) {
+                toggle.style.left = '10px';
+            } else {
+                toggle.style.left = '200px';
+            }
+        }
+        
+        // Setup resize handle for input area
+        function setupResizeHandle() {
+            const handle = document.getElementById('resizeHandle');
+            const container = document.getElementById('inputContainer');
+            let isResizing = false;
+            let startY = 0;
+            let startHeight = 0;
+            
+            handle.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                startY = e.clientY;
+                startHeight = container.offsetHeight;
+                document.body.style.cursor = 'ns-resize';
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                
+                const deltaY = startY - e.clientY;
+                const newHeight = Math.max(100, Math.min(400, startHeight + deltaY));
+                container.style.height = newHeight + 'px';
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isResizing = false;
+                document.body.style.cursor = '';
+            });
+            
+            // Double click to toggle collapse
+            handle.addEventListener('dblclick', () => {
+                container.classList.toggle('collapsed');
+            });
+        }
         
         function loadChatList() {
             fetch('/api/chats')
@@ -1295,7 +1679,11 @@
         }
         
         function sendMessage() {
-            if (isLoading) return;
+            if (isLoading) {
+                // Cancel request if already loading
+                cancelRequest();
+                return;
+            }
             
             const input = document.getElementById('messageInput');
             let message = input.value.trim();
@@ -1303,7 +1691,7 @@
             if (!message) return;
             
             isLoading = true;
-            document.getElementById('sendButton').disabled = true;
+            updateSendButton(true);
             
             // Add user message to UI (without thinking prefix)
             addMessageToUI('user', message);
@@ -1320,15 +1708,16 @@
                 }
             }
             
-            // Add loading indicator
-            addLoadingIndicator();
+            // Add loading indicator with unique ID
+            currentMessageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            addLoadingIndicator(currentMessageId);
             
             // Send to server with timeout
             // Create AbortController for timeout
-            const controller = new AbortController();
+            abortController = new AbortController();
             
-            // Calculate timeout based on thinking mode
-            let timeoutDuration = 305000; // 5 minutes + buffer by default
+            // Calculate timeout based on thinking mode - match backend timeouts
+            let timeoutDuration = 605000; // 10 minutes + 5s buffer by default (matches backend)
             if (thinkingCheckbox.checked) {
                 const thinkingLevel = document.getElementById('thinkingLevel').value;
                 if (thinkingLevel.includes('ultrathink')) {
@@ -1340,7 +1729,15 @@
                 }
             }
             
-            const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+            // Also check message content for thinking keywords (backend checks this)
+            const messageLower = apiMessage.toLowerCase();
+            if (messageLower.includes('ultrathink')) {
+                timeoutDuration = Math.max(timeoutDuration, 1805000); // 30 minutes + 5s
+            } else if (messageLower.includes('megathink')) {
+                timeoutDuration = Math.max(timeoutDuration, 905000);  // 15 minutes + 5s
+            }
+            
+            const timeoutId = setTimeout(() => abortController.abort(), timeoutDuration);
             
             fetch('/api/send', {
                 method: 'POST',
@@ -1351,13 +1748,24 @@
                     model: model,
                     use_session: useSession
                 }),
-                signal: controller.signal
+                signal: abortController.signal
             })
             .then(response => {
                 if (!response.ok) {
-                    return response.json().then(data => {
-                        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
-                    });
+                    // Check Content-Type before parsing
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                        return response.json().then(data => {
+                            throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
+                        });
+                    } else {
+                        return response.text().then(text => {
+                            // Try to extract meaningful error from HTML if present
+                            const match = text.match(/<title>(.*?)<\/title>/);
+                            const errorMsg = match ? match[1] : `HTTP error! status: ${response.status}`;
+                            throw new Error(errorMsg);
+                        });
+                    }
                 }
                 return response.json();
             })
@@ -1367,38 +1775,75 @@
                 removeLoadingIndicator();
                 
                 if (data.error) {
-                    addMessageToUI('assistant', 'エラーが発生しました: ' + data.error);
+                    // Replace loading indicator with error message
+                    replaceLoadingWithMessage(currentMessageId, 'エラーが発生しました: ' + data.error);
                 } else {
                     if (!currentChatId) {
                         currentChatId = data.chat_id;
                     }
-                    addMessageToUI('assistant', data.message);
+                    // Replace loading indicator with actual response
+                    replaceLoadingWithMessage(currentMessageId, data.message);
                     loadChatList(); // Refresh chat list
                 }
             })
             .catch(error => {
                 clearTimeout(timeoutId);
                 console.error('Error:', error);
-                removeLoadingIndicator();
-                if (error.name === 'AbortError') {
+                
+                let errorMessage;
+                // Check if request was manually cancelled
+                if (abortController && abortController.signal.aborted && error.name === 'AbortError') {
+                    // If AbortError and signal was aborted, it's a timeout
                     const minutes = Math.floor(timeoutDuration / 60000);
-                    addMessageToUI('assistant', `エラーが発生しました: リクエストが${minutes}分でタイムアウトしました。\n\n対処方法:\n1. より高い思考レベル (megathink/ultrathink) を試してください\n2. 質問を分割して段階的に処理してください\n3. セッションモードを有効にしてコンテキストを保持してください`);
+                    errorMessage = `エラーが発生しました: リクエストが${minutes}分でタイムアウトしました。\n\n対処方法:\n1. より高い思考レベル (megathink/ultrathink) を試してください\n2. 質問を分割して段階的に処理してください\n3. セッションモードを有効にしてコンテキストを保持してください`;
+                } else if (error.message && error.message.includes('504')) {
+                    // Server timeout - should be rare now that timeouts match
+                    errorMessage = 'エラーが発生しました: サーバーがタイムアウトしました。もう一度お試しください。';
                 } else {
-                    let errorMessage = 'エラーが発生しました。';
+                    errorMessage = 'エラーが発生しました。';
                     if (error.message) {
                         errorMessage += ` (${error.message})`;
                     }
-                    addMessageToUI('assistant', errorMessage);
                 }
+                
+                // Replace loading indicator with error message
+                replaceLoadingWithMessage(currentMessageId, errorMessage);
             })
             .finally(() => {
                 isLoading = false;
-                document.getElementById('sendButton').disabled = false;
+                abortController = null;
+                updateSendButton(false);
                 input.focus();
             });
         }
         
-        function addLoadingIndicator() {
+        function cancelRequest() {
+            if (abortController) {
+                abortController.abort();
+                removeLoadingIndicator();
+                addMessageToUI('assistant', 'リクエストがキャンセルされました。');
+            }
+        }
+        
+        function updateSendButton(isLoading) {
+            const button = document.getElementById('sendButton');
+            const sendIcon = document.getElementById('sendIcon');
+            const stopIcon = document.getElementById('stopIcon');
+            
+            if (isLoading) {
+                button.disabled = false; // Keep enabled for cancel
+                button.title = '停止';
+                sendIcon.style.display = 'none';
+                stopIcon.style.display = 'block';
+            } else {
+                button.disabled = false;
+                button.title = '送信';
+                sendIcon.style.display = 'block';
+                stopIcon.style.display = 'none';
+            }
+        }
+        
+        function addLoadingIndicator(messageId) {
             const container = document.getElementById('chatContainer');
             
             // Remove empty state if present
@@ -1410,6 +1855,7 @@
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'loading-message assistant';
             loadingDiv.id = 'loadingIndicator';
+            loadingDiv.setAttribute('data-message-id', messageId);
             
             const avatarDiv = document.createElement('div');
             avatarDiv.className = 'message-avatar assistant';
@@ -1435,6 +1881,16 @@
             if (loadingDiv) {
                 loadingDiv.remove();
             }
+        }
+        
+        function replaceLoadingWithMessage(messageId, content) {
+            const loadingDiv = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (loadingDiv) {
+                // Remove loading indicator
+                loadingDiv.remove();
+            }
+            // Add the actual message
+            addMessageToUI('assistant', content);
         }
         
         function addMessageToUI(role, content) {
@@ -1617,12 +2073,11 @@
         }
         
         function updateDarkModeButton(isDark) {
-            const buttons = document.querySelectorAll('.action-button');
-            buttons.forEach(button => {
-                if (button.textContent.includes('ダークモード') || button.textContent.includes('ライトモード')) {
-                    button.textContent = isDark ? '☀️ ライトモード' : '🌙 ダークモード';
-                }
-            });
+            const button = document.getElementById('darkModeBtn');
+            if (button) {
+                button.innerHTML = isDark ? '☀️' : '🌙';
+                button.title = isDark ? 'ライトモード' : 'ダークモード';
+            }
         }
         
         function toggleSessionMode() {
@@ -1728,7 +2183,7 @@
     <div id="monitorModal" class="modal">
         <div class="modal-content">
             <button class="close-modal" onclick="closeMonitorModal()">×</button>
-            <h2 class="status-header">Claude トークンモニター (Max5: 35,000トークン)</h2>
+            <h2 class="status-header">Claude トークンモニター (Max20: 140,000トークン)</h2>
             <div id="monitorContent" class="status-content">
                 <div class="typing-indicator">
                     <div class="typing-dot"></div>

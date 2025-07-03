@@ -231,39 +231,9 @@ def get_claude_monitor():
         # Calculate hours since reset
         hours_since_reset = (now_jst.hour - reset_hour) if now_jst.hour >= reset_hour else (now_jst.hour + 24 - reset_hour)
         
-        # Try to detect plan from config
-        plan_name = "Unknown"
-        max_tokens = 7000  # Default to Pro plan
-        
-        config_path = os.path.expanduser('~/.config/claude/claude_config.json')
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, 'r') as f:
-                    config = json.load(f)
-                    if 'user' in config and 'plan' in config['user']:
-                        plan_info = config['user']['plan']
-                        plan_name = plan_info.get('name', 'Unknown')
-                        
-                        # Map plan names to token limits
-                        if 'max5' in plan_name.lower():
-                            max_tokens = 35000
-                            plan_name = "Max5"
-                        elif 'max20' in plan_name.lower():
-                            max_tokens = 140000
-                            plan_name = "Max20"
-                        elif 'max1' in plan_name.lower():
-                            max_tokens = 7000
-                            plan_name = "Max1"
-                        elif 'pro' in plan_name.lower():
-                            max_tokens = 7000
-                            plan_name = "Pro"
-                        else:
-                            # Try to extract from plan details
-                            logger.info(f"Detected plan: {plan_info}")
-                            plan_name = plan_info.get('name', 'Unknown')
-                            max_tokens = 35000  # Default to Max5 for unknown
-            except Exception as e:
-                logger.error(f"Error reading plan from config: {e}")
+        # Force MAX20 plan settings
+        plan_name = "Max20"
+        max_tokens = 140000  # MAX20 plan limit
         
         # Try to get actual usage from Claude API test
         token_info = "Checking..."
@@ -527,7 +497,7 @@ def send_message():
         'opus4': 'opus',  # Opus 4
         'sonnet': 'sonnet',  # Use alias for latest
         'sonnet4': 'claude-sonnet-4-20250514',  # Sonnet 4 specific
-        'haiku': 'haiku',  # Use alias for latest
+        'haiku': 'claude-3-5-haiku-20241022',  # Use full model name instead of alias
         # Keep full names as-is
         'claude-3-5-sonnet-20241022': 'claude-3-5-sonnet-20241022',
         'claude-3-5-haiku-20241022': 'claude-3-5-haiku-20241022',
