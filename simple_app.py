@@ -495,13 +495,8 @@ def send_message():
     model_mapping = {
         'opus': 'opus',  # Use alias for latest
         'opus4': 'opus',  # Opus 4
-        'sonnet': 'sonnet',  # Use alias for latest
         'sonnet4': 'claude-sonnet-4-20250514',  # Sonnet 4 specific
-        'haiku': 'claude-3-5-haiku-20241022',  # Use full model name instead of alias
         # Keep full names as-is
-        'claude-3-5-sonnet-20241022': 'claude-3-5-sonnet-20241022',
-        'claude-3-5-haiku-20241022': 'claude-3-5-haiku-20241022',
-        'claude-3-opus-20240229': 'claude-3-opus-20240229',
         'claude-sonnet-4-20250514': 'claude-sonnet-4-20250514'
     }
     

@@ -1,0 +1,302 @@
+[
+  {
+    "test_id": 21,
+    "message": "今日の天気は？",
+    "start_time": "2025-07-04T23:11:58.419368",
+    "success": true,
+    "response_time": 9.286653280258179,
+    "error": null,
+    "response": "╭────────────────────────────────────────────────────────────────────╮\n│                            ",
+    "status_code": 200
+  },
+  {
+    "test_id": 13,
+    "message": "エラーが発生しました。 (Unexpected token '",
+    "start_time": "2025-07-04T23:11:58.402492",
+    "success": true,
+    "response_time": 9.326693058013916,
+    "error": null,
+    "response": "╭────────────────────────────────────────────────────────────────────╮\n│                            ",
+    "status_code": 200
+  },
+  {
+    "test_id": 28,
+    "message": "AIについて教えて",
+    "start_time": "2025-07-04T23:11:58.437000",
+    "success": true,
+    "response_time": 10.155668258666992,
+    "error": null,
+    "response": "╭────────────────────────────────────────────────────────────────────╮\n│                            ",
+    "status_code": 200
+  },
+  {
+    "test_id": 29,
+    "message": "プログラミングの基礎",
+    "start_time": "2025-07-04T23:11:58.438117",
+    "success": true,
+    "response_time": 10.695772886276245,
+    "error": null,
+    "response": "╭────────────────────────────────────────────────────────────────────╮\n│                            ",
+    "status_code": 200
+  },
+  {
+    "test_id": 9,
+    "message": "プログラミングの基礎",
+    "start_time": "2025-07-04T23:11:58.397781",
+    "success": true,
+    "response_time": 13.091094493865967,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 7,
+    "message": "テスト",
+    "start_time": "2025-07-04T23:11:58.392282",
+    "success": true,
+    "response_time": 13.765223741531372,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 5,
+    "message": "1 + 1 = ?",
+    "start_time": "2025-07-04T23:11:58.389444",
+    "success": true,
+    "response_time": 13.819298505783081,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 1,
+    "message": "今日の天気は？",
+    "start_time": "2025-07-04T23:11:58.383870",
+    "success": true,
+    "response_time": 13.939882755279541,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 11,
+    "message": "今日の天気は？",
+    "start_time": "2025-07-04T23:11:58.400460",
+    "success": true,
+    "response_time": 13.951992273330688,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 27,
+    "message": "テスト",
+    "start_time": "2025-07-04T23:11:58.436620",
+    "success": true,
+    "response_time": 14.003397464752197,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 0,
+    "message": "こんにちは",
+    "start_time": "2025-07-04T23:11:58.383299",
+    "success": true,
+    "response_time": 14.10828948020935,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 16,
+    "message": "Hello world",
+    "start_time": "2025-07-04T23:11:58.408519",
+    "success": true,
+    "response_time": 14.293032169342041,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 2,
+    "message": "Pythonの基本的な文法を教えて",
+    "start_time": "2025-07-04T23:11:58.384239",
+    "success": true,
+    "response_time": 14.377750396728516,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 12,
+    "message": "Pythonの基本的な文法を教えて",
+    "start_time": "2025-07-04T23:11:58.401425",
+    "success": true,
+    "response_time": 14.415274858474731,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 19,
+    "message": "プログラミングの基礎",
+    "start_time": "2025-07-04T23:11:58.417277",
+    "success": true,
+    "response_time": 14.47416067123413,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 18,
+    "message": "AIについて教えて",
+    "start_time": "2025-07-04T23:11:58.416099",
+    "success": true,
+    "response_time": 14.513765573501587,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 14,
+    "message": "シンプルなテストメッセージ",
+    "start_time": "2025-07-04T23:11:58.403918",
+    "success": true,
+    "response_time": 14.567228078842163,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 15,
+    "message": "1 + 1 = ?",
+    "start_time": "2025-07-04T23:11:58.406318",
+    "success": true,
+    "response_time": 14.577367305755615,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 6,
+    "message": "Hello world",
+    "start_time": "2025-07-04T23:11:58.390457",
+    "success": true,
+    "response_time": 14.645621538162231,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 22,
+    "message": "Pythonの基本的な文法を教えて",
+    "start_time": "2025-07-04T23:11:58.420523",
+    "success": true,
+    "response_time": 14.6318998336792,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 4,
+    "message": "シンプルなテストメッセージ",
+    "start_time": "2025-07-04T23:11:58.385095",
+    "success": true,
+    "response_time": 14.691383838653564,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 17,
+    "message": "テスト",
+    "start_time": "2025-07-04T23:11:58.414870",
+    "success": true,
+    "response_time": 14.776747226715088,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 3,
+    "message": "エラーが発生しました。 (Unexpected token '",
+    "start_time": "2025-07-04T23:11:58.384743",
+    "success": true,
+    "response_time": 14.838854551315308,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 24,
+    "message": "シンプルなテストメッセージ",
+    "start_time": "2025-07-04T23:11:58.422608",
+    "success": true,
+    "response_time": 14.836128950119019,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 26,
+    "message": "Hello world",
+    "start_time": "2025-07-04T23:11:58.435252",
+    "success": true,
+    "response_time": 14.91461992263794,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 25,
+    "message": "1 + 1 = ?",
+    "start_time": "2025-07-04T23:11:58.431365",
+    "success": true,
+    "response_time": 14.957556962966919,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 20,
+    "message": "こんにちは",
+    "start_time": "2025-07-04T23:11:58.418326",
+    "success": true,
+    "response_time": 15.073065757751465,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 23,
+    "message": "エラーが発生しました。 (Unexpected token '",
+    "start_time": "2025-07-04T23:11:58.421554",
+    "success": true,
+    "response_time": 15.1964111328125,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 10,
+    "message": "こんにちは",
+    "start_time": "2025-07-04T23:11:58.399122",
+    "success": true,
+    "response_time": 15.369170427322388,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  },
+  {
+    "test_id": 8,
+    "message": "AIについて教えて",
+    "start_time": "2025-07-04T23:11:58.392839",
+    "success": true,
+    "response_time": 15.379745721817017,
+    "error": null,
+    "response": "申し訳ございません。エラーが発生しました。",
+    "status_code": 200
+  }
+]

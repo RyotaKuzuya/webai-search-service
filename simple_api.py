@@ -45,13 +45,8 @@ def chat():
     model_mapping = {
         'opus': 'opus',  # Use alias for latest
         'opus4': 'opus',  # Opus 4
-        'sonnet': 'sonnet',  # Use alias for latest
         'sonnet4': 'claude-sonnet-4-20250514',  # Sonnet 4 specific
-        'haiku': 'claude-3-5-haiku-20241022',  # Use full model name instead of alias
         # Keep full names as-is
-        'claude-3-5-sonnet-20241022': 'claude-3-5-sonnet-20241022',
-        'claude-3-5-haiku-20241022': 'claude-3-5-haiku-20241022',
-        'claude-3-opus-20240229': 'claude-3-opus-20240229',
         'claude-sonnet-4-20250514': 'claude-sonnet-4-20250514'
     }
     
@@ -110,11 +105,26 @@ def chat():
         
         if result.returncode == 0:
             response = result.stdout.strip()
+            # Check if response contains API error even with returncode 0
+            if response and "API Error:" in response:
+                logger.error(f"API Error in response: {response}")
+                if "max_tokens" in response and "thinking.budget_tokens" in response:
+                    response = "エラー: ultrathink (32K)モードは現在のCLI実装の制限により使用できません。代わりにmegathink (10K)またはthink harder (20K)をお使いください。"
+                else:
+                    response = f"APIエラーが発生しました: {response}"
         else:
             logger.error(f"Claude error: {result.stderr}")
             error_msg = result.stderr.strip()
+            # Also check stdout for error messages (Claude sometimes outputs errors to stdout)
+            if not error_msg and result.stdout:
+                stdout_lower = result.stdout.lower()
+                if "api error" in stdout_lower or "error" in stdout_lower:
+                    error_msg = result.stdout.strip()
+            
             if "job was not started" in error_msg and ("payments have failed" in error_msg or "spending limit" in error_msg):
                 response = "エラー: Anthropicアカウントの支払いに問題があります。'Billing & plans'セクションで支払い情報を確認してください。"
+            elif "max_tokens" in error_msg and "thinking.budget_tokens" in error_msg:
+                response = "エラー: ultrathink (32K)モードは現在のCLI実装の制限により使用できません。代わりにmegathink (10K)またはthink harder (20K)をお使いください。"
             elif "rate limit" in error_msg.lower():
                 response = "エラー: レート制限に達しました。しばらくお待ちください。"
             else:
@@ -146,13 +156,8 @@ def chat_stream():
     model_mapping = {
         'opus': 'opus',  # Use alias for latest
         'opus4': 'opus',  # Opus 4
-        'sonnet': 'sonnet',  # Use alias for latest
         'sonnet4': 'claude-sonnet-4-20250514',  # Sonnet 4 specific
-        'haiku': 'claude-3-5-haiku-20241022',  # Use full model name instead of alias
         # Keep full names as-is
-        'claude-3-5-sonnet-20241022': 'claude-3-5-sonnet-20241022',
-        'claude-3-5-haiku-20241022': 'claude-3-5-haiku-20241022',
-        'claude-3-opus-20240229': 'claude-3-opus-20240229',
         'claude-sonnet-4-20250514': 'claude-sonnet-4-20250514'
     }
     

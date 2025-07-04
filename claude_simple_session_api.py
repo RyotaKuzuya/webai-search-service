@@ -78,12 +78,27 @@ class SimpleClaudeSession:
                 error_msg = result.stderr.strip()
                 if "job was not started" in error_msg and ("payments have failed" in error_msg or "spending limit" in error_msg):
                     raise Exception("Anthropicアカウントの支払いに問題があります。'Billing & plans'セクションで支払い情報を確認してください。")
+                elif "max_tokens" in error_msg and "thinking.budget_tokens" in error_msg:
+                    raise Exception("ultrathink (32K)モードは現在のCLI実装の制限により使用できません。代わりにmegathink (10K)またはthink harder (20K)をお使いください。")
                 elif "rate limit" in error_msg.lower():
                     raise Exception("レート制限に達しました。しばらくお待ちください。")
                 else:
+                    # Also check stdout for error messages
+                    if not error_msg and result.stdout:
+                        stdout_lower = result.stdout.lower()
+                        if "api error" in stdout_lower or "error" in stdout_lower:
+                            error_msg = result.stdout.strip()
                     raise Exception(f"Claude CLI error: {error_msg[:200]}")
             
             response = result.stdout.strip()
+            
+            # Check if response contains API error even with returncode 0
+            if response and "API Error:" in response:
+                logger.error(f"API Error in response: {response}")
+                if "max_tokens" in response and "thinking.budget_tokens" in response:
+                    raise Exception("ultrathink (32K)モードは現在のCLI実装の制限により使用できません。代わりにmegathink (10K)またはthink harder (20K)をお使いください。")
+                else:
+                    raise Exception(f"APIエラーが発生しました: {response}")
             
             # Store response in conversation
             self.conversation.append({"role": "assistant", "content": response})
