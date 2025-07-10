@@ -1,15 +1,16 @@
-name: Optimized WebAI Deploy
+name: Optimized WebAI Deploy (DISABLED)
+
+# このワークフローは無効化されています
+# GitHub Actionsの課金制限のため、ローカル実行に移行しました
+# 代わりに ./start_services.sh を使用してください
 
 on:
-  push:
-    branches: [ master, main ]
-    # 必要なファイルが変更された時のみ実行
-    paths:
-      - '**.py'
-      - 'requirements.txt'
-      - 'templates/**'
-      - 'static/**'
   workflow_dispatch:
+    inputs:
+      note:
+        description: 'このワークフローは無効です'
+        required: false
+        type: string
 
 jobs:
   deploy:

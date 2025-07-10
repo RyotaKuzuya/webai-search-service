@@ -1,10 +1,15 @@
-name: Deploy to Cloud
+name: Deploy to Cloud (DISABLED)
+
+# このワークフローは無効化されています
+# GitHub Actionsの課金制限のため、手動デプロイに移行しました
 
 on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      note:
+        description: 'このワークフローは無効です'
+        required: false
+        type: string
 
 jobs:
   test:

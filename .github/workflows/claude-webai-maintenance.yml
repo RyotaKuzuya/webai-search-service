@@ -1,6 +1,19 @@
-name: WebAI Maintenance with Claude
+name: WebAI Maintenance with Claude (DISABLED)
+
+# このワークフローは無効化されています
+# GitHub Actionsの課金制限のため、ローカル実行に移行しました
+# 代わりに ./claude_local_executor.sh を使用してください
 
 on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: 'このワークフローは無効です'
+        required: false
+        type: string
+
+# 以下は参考のため残していますが、実行されません
+on_disabled:
   schedule:
     - cron: '0 0 * * 0'  # 毎週日曜日の0時に実行
   workflow_dispatch:
