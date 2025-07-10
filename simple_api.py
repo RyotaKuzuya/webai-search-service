@@ -84,6 +84,9 @@ def chat():
         # Build command with model selection
         cmd = [CLAUDE_CLI, "--print", "--model", model]
         
+        # Log the request
+        logger.info(f"Processing request with model: {model}, message length: {len(message)}")
+        
         # Simply run claude --print with the message
         # Increase timeout based on thinking mode and expected processing time
         # Anthropic recommends up to 60 minutes for Claude 3.7/4
@@ -129,6 +132,13 @@ def chat():
                 response = "エラー: レート制限に達しました。しばらくお待ちください。"
             else:
                 response = f"申し訳ございません。エラーが発生しました: {error_msg[:200]}"
+        
+        # Ensure response is not empty
+        if not response:
+            logger.warning("Empty response from Claude")
+            response = "応答がありませんでした。もう一度お試しください。"
+        else:
+            logger.info(f"Response received, length: {len(response)}")
         
         return jsonify({
             "id": str(uuid.uuid4()),
@@ -224,4 +234,7 @@ def chat_stream():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8001))
     logger.info(f"Starting Simple Claude API on port {port}")
+    # Add request logging
+    import logging
+    logging.getLogger('werkzeug').setLevel(logging.INFO)
     app.run(host='0.0.0.0', port=port, debug=False)

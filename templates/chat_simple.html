@@ -1755,6 +1755,8 @@
                     if (contentType && contentType.indexOf("application/json") !== -1) {
                         return response.json().then(data => {
                             throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
+                        }).catch(() => {
+                            throw new Error(`HTTP error! status: ${response.status}`);
                         });
                     } else {
                         return response.text().then(text => {
@@ -1762,10 +1764,15 @@
                             const match = text.match(/<title>(.*?)<\/title>/);
                             const errorMsg = match ? match[1] : `HTTP error! status: ${response.status}`;
                             throw new Error(errorMsg);
+                        }).catch(() => {
+                            throw new Error(`HTTP error! status: ${response.status}`);
                         });
                     }
                 }
-                return response.json();
+                return response.json().catch(() => {
+                    console.error('Failed to parse JSON response');
+                    throw new Error('サーバーからの応答を解析できませんでした');
+                });
             })
             .then(data => {
                 clearTimeout(timeoutId);
@@ -1779,8 +1786,15 @@
                     if (!currentChatId) {
                         currentChatId = data.chat_id;
                     }
-                    // Replace loading indicator with actual response
-                    replaceLoadingWithMessage(currentMessageId, data.message);
+                    // Check if message is empty or undefined
+                    const responseMessage = data.message || data.response || '';
+                    if (!responseMessage || responseMessage.trim() === '') {
+                        console.warn('Empty response received from server');
+                        replaceLoadingWithMessage(currentMessageId, '応答がありませんでした。もう一度お試しください。');
+                    } else {
+                        // Replace loading indicator with actual response
+                        replaceLoadingWithMessage(currentMessageId, responseMessage);
+                    }
                     loadChatList(); // Refresh chat list
                 }
             })

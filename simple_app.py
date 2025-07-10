@@ -571,7 +571,12 @@ def send_message():
         
         if response.status_code == 200:
             result = response.json()
-            ai_message = result.get('message', '')
+            ai_message = result.get('message', '') or result.get('response', '')
+            
+            # Check if response is empty
+            if not ai_message or ai_message.strip() == '':
+                logger.warning(f"Empty response received from API: {result}")
+                ai_message = "応答がありませんでした。もう一度お試しください。"
             
             # Save AI response
             c.execute('INSERT INTO messages (chat_id, role, content) VALUES (?, ?, ?)',

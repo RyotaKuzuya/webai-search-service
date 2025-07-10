@@ -100,6 +100,11 @@ class SimpleClaudeSession:
                 else:
                     raise Exception(f"APIエラーが発生しました: {response}")
             
+            # Ensure response is not empty
+            if not response:
+                logger.warning("Empty response from Claude")
+                response = "応答がありませんでした。もう一度お試しください。"
+            
             # Store response in conversation
             self.conversation.append({"role": "assistant", "content": response})
             
