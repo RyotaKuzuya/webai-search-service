@@ -211,22 +211,35 @@ docker-compose up -d
 
 問題が発生した場合は、[DEPLOYMENT.md](./DEPLOYMENT.md)のトラブルシューティングセクションを参照してください。
 
-## Claude Codeのローカル実行
+## Claude Code GitHub Actions (公式)
 
-GitHub Actionsの課金制限を回避してClaude Codeを実行する方法：
+Claude MaxプランでGitHub Actionsが利用可能です：
 
-### インタラクティブ実行
+### セットアップ
+
+```bash
+# OAuthトークンの生成
+./setup_claude_oauth_token.sh
+
+# GitHub Secretsに追加
+CLAUDE_CODE_OAUTH_TOKEN
+```
+
+### 使用方法
+
+1. **Issue/PRでのメンション**
+   ```
+   @claude このコードをレビューしてください
+   ```
+
+2. **手動実行**
+   - Actions → Claude Code Official → Run workflow
+
+### ローカル実行（バックアップ）
 
 ```bash
 # メニュー式の実行
 ./claude_local_executor.sh
-```
-
-### 直接実行
-
-```bash
-# コードレビュー
-./github_actions_bypass.sh
 
 # Claude CLI直接
 claude "コードレビューをしてください" --model sonnet4
