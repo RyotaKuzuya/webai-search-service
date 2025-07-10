@@ -1,0 +1,230 @@
+name: Claude Local Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Claude に実行させるタスク'
+        required: true
+        type: choice
+        options:
+          - 'code-review'
+          - 'bug-fix'
+          - 'performance-optimization'
+          - 'security-check'
+          - 'dependency-update'
+          - 'custom'
+      custom_prompt:
+        description: 'カスタムタスクの場合の詳細な指示'
+        required: false
+        type: string
+      model:
+        description: '使用するモデル'
+        required: false
+        type: choice
+        default: 'sonnet4'
+        options:
+          - 'opus4'
+          - 'sonnet4'
+          - 'sonnet'
+          - 'haiku'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+jobs:
+  run-claude-locally:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install dependencies
+        run: |
+          pip install requests flask
+          
+      - name: Create Claude task script
+        run: |
+          cat > run_claude_task.py << 'EOF'
+          import subprocess
+          import sys
+          import os
+          import json
+          from datetime import datetime
+          
+          def run_claude_task(task_type, custom_prompt="", model="sonnet4"):
+              prompts = {
+                  "code-review": """
+                  WebAIプロジェクトのコードレビューを実行してください。
+                  以下の観点でチェック：
+                  1. セキュリティの問題
+                  2. パフォーマンスの改善点
+                  3. コード品質
+                  4. ベストプラクティスの遵守
+                  
+                  simple_api.py, simple_app.py, claude_simple_session_api.pyを重点的に確認してください。
+                  """,
+                  
+                  "bug-fix": """
+                  WebAIプロジェクトの既知のバグや問題を調査し、修正してください。
+                  エラーログも確認し、潜在的な問題も特定してください。
+                  """,
+                  
+                  "performance-optimization": """
+                  WebAIプロジェクトのパフォーマンスを最適化してください。
+                  1. レスポンス時間の改善
+                  2. リソース使用量の削減
+                  3. 並行処理の最適化
+                  """,
+                  
+                  "security-check": """
+                  WebAIプロジェクトのセキュリティ監査を実行してください。
+                  1. SQLインジェクション対策
+                  2. XSS対策
+                  3. 認証・認可の確認
+                  4. セキュアな設定の確認
+                  """,
+                  
+                  "dependency-update": """
+                  requirements.txtの依存関係を確認し、必要に応じて更新してください。
+                  セキュリティアップデートを優先してください。
+                  """
+              }
+              
+              # タスクに応じたプロンプトを選択
+              if task_type == "custom":
+                  prompt = custom_prompt or "WebAIプロジェクトを改善してください。"
+              else:
+                  prompt = prompts.get(task_type, "WebAIプロジェクトを改善してください。")
+              
+              print(f"🚀 Claude Local Runner - {datetime.now()}")
+              print(f"タスク: {task_type}")
+              print(f"モデル: {model}")
+              print("-" * 60)
+              
+              # Claudeコマンドを実行（実際の環境では適切なパスと認証が必要）
+              try:
+                  # ローカル環境でのClaude実行をシミュレート
+                  print(f"\n📝 実行するプロンプト:\n{prompt}\n")
+                  
+                  # 実際にはここでClaude CLIを呼び出す
+                  # result = subprocess.run(['claude', prompt, '--model', model], 
+                  #                       capture_output=True, text=True)
+                  
+                  # GitHub Actions環境での代替処理
+                  output = f"""
+                  ## タスク実行レポート
+                  
+                  ### 実行内容
+                  - タスク: {task_type}
+                  - モデル: {model}
+                  - 実行時刻: {datetime.now()}
+                  
+                  ### 結果
+                  Claude CLIがGitHub Actions環境で利用できないため、ローカルで実行してください：
+                  
+                  ```bash
+                  cd /home/ubuntu/webai
+                  claude "{prompt.replace('"', '\\"')}" --model {model}
+                  ```
+                  
+                  ### 推奨事項
+                  1. セルフホストランナーの設定
+                  2. ローカル環境での定期実行
+                  3. APIエンドポイント経由での実行
+                  """
+                  
+                  print(output)
+                  
+                  # 結果を保存
+                  with open('claude_task_result.md', 'w', encoding='utf-8') as f:
+                      f.write(output)
+                  
+              except Exception as e:
+                  print(f"❌ エラーが発生しました: {e}")
+                  sys.exit(1)
+          
+          if __name__ == "__main__":
+              task = os.environ.get('TASK_TYPE', 'code-review')
+              custom = os.environ.get('CUSTOM_PROMPT', '')
+              model = os.environ.get('MODEL', 'sonnet4')
+              
+              run_claude_task(task, custom, model)
+          EOF
+          
+      - name: Execute Claude task
+        env:
+          TASK_TYPE: ${{ github.event.inputs.task }}
+          CUSTOM_PROMPT: ${{ github.event.inputs.custom_prompt }}
+          MODEL: ${{ github.event.inputs.model }}
+        run: python run_claude_task.py
+        
+      - name: Upload results
+        uses: actions/upload-artifact@v3
+        with:
+          name: claude-task-results
+          path: claude_task_result.md
+          
+      - name: Create issue with results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const taskType = '${{ github.event.inputs.task }}';
+            const timestamp = new Date().toISOString();
+            
+            let resultContent = 'タスク結果の生成に失敗しました。';
+            try {
+              resultContent = fs.readFileSync('claude_task_result.md', 'utf8');
+            } catch (e) {
+              console.error('Result file not found:', e);
+            }
+            
+            const issueBody = `## 🤖 Claude タスク実行結果
+            
+            **実行時刻**: ${timestamp}
+            **タスクタイプ**: ${taskType}
+            **モデル**: ${{ github.event.inputs.model }}
+            
+            ---
+            
+            ${resultContent}
+            
+            ---
+            
+            ### 次のステップ
+            
+            以下のコマンドをローカルで実行してください：
+            
+            \`\`\`bash
+            cd /home/ubuntu/webai
+            ./github_actions_bypass.sh
+            \`\`\`
+            
+            または直接Claude CLIを使用：
+            
+            \`\`\`bash
+            claude "タスクを実行" --model ${{ github.event.inputs.model }}
+            \`\`\`
+            `;
+            
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🤖 Claude タスク実行: ${taskType} - ${timestamp}`,
+              body: issueBody,
+              labels: ['claude-task', 'automated']
+            });
+            
+            console.log(`Issue created: ${issue.data.html_url}`);

@@ -13,6 +13,7 @@ WebAI Search Serviceは、claude-code-apiをエンジンとし、WebSocket/SSE�
 - **セキュアなアクセス**: SSL/TLS暗号化通信と管理者認証
 - **OAuth認証**: claude-code-apiのOAuth認証フロー対応
 - **永続的認証**: Dockerボリュームによる認証情報の永続化
+- **Claude Codeローカル実行**: GitHub Actions課金制限を回避したローカル実行
 
 ## システムアーキテクチャ
 
@@ -209,3 +210,26 @@ docker-compose up -d
 ## サポート
 
 問題が発生した場合は、[DEPLOYMENT.md](./DEPLOYMENT.md)のトラブルシューティングセクションを参照してください。
+
+## Claude Codeのローカル実行
+
+GitHub Actionsの課金制限を回避してClaude Codeを実行する方法：
+
+### インタラクティブ実行
+
+```bash
+# メニュー式の実行
+./claude_local_executor.sh
+```
+
+### 直接実行
+
+```bash
+# コードレビュー
+./github_actions_bypass.sh
+
+# Claude CLI直接
+claude "コードレビューをしてください" --model sonnet4
+```
+
+詳細は[GITHUB_ACTIONS_LOCAL.md](GITHUB_ACTIONS_LOCAL.md)を参照してください。
