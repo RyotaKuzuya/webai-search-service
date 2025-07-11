@@ -38,8 +38,8 @@ jobs:
       
       - name: Run Claude Code with OAuth
         id: claude
-        # Using Akira-Papa's OAuth-enabled fork
-        uses: Akira-Papa/claude-code-action@main
+        # Using custom OAuth-enabled action
+        uses: ./claude-code-action-oauth
         with:
           # Enable OAuth authentication
           use_oauth: 'true'
