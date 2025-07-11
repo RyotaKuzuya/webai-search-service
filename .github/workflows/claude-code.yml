@@ -1,4 +1,4 @@
-name: Claude Code Official
+name: Claude Code Beta
 
 on:
   issue_comment:
