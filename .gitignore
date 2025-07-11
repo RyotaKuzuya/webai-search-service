@@ -8,6 +8,9 @@ claude-config/
 claude-home/
 *.tmp
 auth_code.tmp
+.claude_tokens.json
+*_tokens.json
+*_oauth.json
 
 # Certificates
 certbot/
