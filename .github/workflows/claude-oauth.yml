@@ -39,7 +39,7 @@ jobs:
       - name: Run Claude Code with OAuth
         id: claude
         # Using the forked action that supports OAuth
-        uses: your-username/claude-code-action@oauth-support
+        uses: RyotaKuzuya/claude-code-action@main
         with:
           # OAuth authentication tokens
           claude_access_token: ${{ secrets.CLAUDE_ACCESS_TOKEN }}

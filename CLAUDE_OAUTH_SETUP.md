@@ -1,157 +1,85 @@
-# Claude Max OAuth Authentication for GitHub Actions
+# Claude OAuth Authentication Setup Guide
 
-This guide explains how to set up Claude Max OAuth authentication for GitHub Actions, replacing the traditional API key approach.
+This guide will help you complete the setup of Claude OAuth authentication for your GitHub Actions.
 
-## Overview
+## Step 1: Fork Required Repositories
 
-Claude Max OAuth authentication provides a more secure and flexible way to authenticate with Claude in GitHub Actions. Instead of using API keys, it uses OAuth tokens that can be refreshed automatically.
+Since GitHub CLI is not authenticated on this system, you'll need to manually fork these repositories:
 
-## Prerequisites
+1. **Fork claude-code-action**:
+   - Go to: https://github.com/anthropics/claude-code-action
+   - Click the "Fork" button in the top-right corner
+   - Select your account (RyotaKuzuya) as the destination
 
-1. **Claude Max Subscription**: You need an active Claude Max subscription
-2. **OAuth Tokens**: You must obtain OAuth tokens from Claude Max
-3. **GitHub Repository**: Write access to configure secrets
-4. **GitHub CLI**: Install `gh` CLI for easier secret management
+2. **Fork claude-code-base-action**:
+   - Go to: https://github.com/anthropics/claude-code-base-action
+   - Click the "Fork" button in the top-right corner
+   - Select your account (RyotaKuzuya) as the destination
 
-## Setup Steps
+## Step 2: Obtain Claude OAuth Tokens
 
-### 1. Obtain OAuth Tokens
+To get your Claude OAuth tokens:
 
-First, you need to obtain OAuth tokens from Claude Max:
+1. Visit the Claude OAuth application page (provided by Anthropic)
+2. Authorize the application for your Claude account
+3. Save the following tokens:
+   - `CLAUDE_ACCESS_TOKEN`: Your OAuth access token
+   - `CLAUDE_REFRESH_TOKEN`: Your OAuth refresh token
+   - `CLAUDE_EXPIRES_AT`: Token expiration timestamp
 
-```bash
-# Run the OAuth setup script (if available)
-./setup-claude-oauth-token.sh
-```
+## Step 3: Add Secrets to Your GitHub Repository
 
-This will provide you with:
-- `CLAUDE_ACCESS_TOKEN`: The access token for API calls
-- `CLAUDE_REFRESH_TOKEN`: Token used to refresh the access token
-- `CLAUDE_EXPIRES_AT`: Unix timestamp when the access token expires
-
-### 2. Configure GitHub Secrets
-
-Run the setup script to configure GitHub secrets:
-
-```bash
-./setup-claude-oauth-secrets.sh
-```
-
-Or manually add the secrets via GitHub UI:
-1. Go to Settings → Secrets and variables → Actions
+1. Go to your repository settings: https://github.com/RyotaKuzuya/webai/settings/secrets/actions
 2. Add the following secrets:
    - `CLAUDE_ACCESS_TOKEN`
    - `CLAUDE_REFRESH_TOKEN`
    - `CLAUDE_EXPIRES_AT`
 
-### 3. Fork Required Repositories
+## Step 4: Update Workflow Files
 
-You need to fork the Claude Code Action repository and add OAuth support:
+The workflow files have been updated to use your forked repositories:
+- `.github/workflows/claude-oauth.yml` - Main OAuth workflow
+- `.github/workflows/claude-oauth-test.yml` - Test workflow for verification
 
-1. Fork `anthropics/claude-code-action`
-2. Fork `anthropics/claude-code-base-action` (if using base action)
-3. Add OAuth authentication support to your forked action
+## Step 5: Test the Setup
 
-### 4. Update Workflow File
+### Option A: Manual Workflow Test
+1. Go to Actions tab in your repository
+2. Select "Test Claude OAuth Setup" workflow
+3. Click "Run workflow"
+4. Optionally provide a test message
+5. Check the workflow run results
 
-The workflow file (`claude-oauth.yml`) is already configured to use OAuth authentication:
+### Option B: Issue/PR Test
+1. Create a new issue with "@claude" mention
+2. Claude should respond using OAuth authentication
 
-```yaml
-- name: Run Claude Code with OAuth
-  uses: your-username/claude-code-action@oauth-support
-  with:
-    claude_access_token: ${{ secrets.CLAUDE_ACCESS_TOKEN }}
-    claude_refresh_token: ${{ secrets.CLAUDE_REFRESH_TOKEN }}
-    claude_expires_at: ${{ secrets.CLAUDE_EXPIRES_AT }}
-    github_token: ${{ secrets.GITHUB_TOKEN }}
-```
+## Workflow Files Updated
 
-Update `your-username` to your GitHub username where you forked the action.
+### claude-oauth.yml
+- Updated to use `RyotaKuzuya/claude-code-action@main`
+- Configured for OAuth authentication
+- Triggers on @claude mentions in issues, PRs, and comments
+
+### claude-oauth-test.yml
+- Manual workflow for testing OAuth setup
+- Can be triggered from Actions tab
+- Displays Claude's response for verification
 
 ## Token Refresh
 
-The OAuth tokens need to be refreshed periodically. You can:
-
-1. **Manual Refresh**: Run the refresh script when tokens expire
-2. **Automated Refresh**: Set up a scheduled workflow to refresh tokens
-3. **Action-based Refresh**: The forked action can handle token refresh automatically
-
-### Example Token Refresh Workflow
-
-Create `.github/workflows/refresh-claude-tokens.yml`:
-
-```yaml
-name: Refresh Claude OAuth Tokens
-
-on:
-  schedule:
-    # Run daily at 2 AM UTC
-    - cron: '0 2 * * *'
-  workflow_dispatch:
-
-jobs:
-  refresh:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Refresh Tokens
-        run: |
-          # Add your token refresh logic here
-          python refresh_claude_token.py
-        env:
-          CLAUDE_REFRESH_TOKEN: ${{ secrets.CLAUDE_REFRESH_TOKEN }}
-```
+The refresh token workflow (`.github/workflows/refresh-claude-tokens.yml`) will automatically refresh your OAuth tokens when they expire. Make sure this workflow has the necessary permissions.
 
 ## Troubleshooting
 
-### Common Issues
+1. **Authentication Errors**: Verify all three OAuth secrets are correctly set
+2. **Action Not Found**: Ensure repositories are properly forked to RyotaKuzuya account
+3. **Permission Errors**: Check repository permissions for the GitHub token
+4. **Token Expiration**: The refresh workflow should handle this automatically
 
-1. **Token Expired**: 
-   - Check `CLAUDE_EXPIRES_AT` timestamp
-   - Run token refresh process
-   - Update GitHub secrets
+## Next Steps
 
-2. **Authentication Failed**:
-   - Verify all three secrets are set correctly
-   - Check token format and validity
-   - Ensure forked action supports OAuth
-
-3. **Action Not Found**:
-   - Verify you've updated the action reference to your fork
-   - Check the branch name (e.g., `@oauth-support`)
-
-### Debug Mode
-
-Add debug logging to your workflow:
-
-```yaml
-env:
-  ACTIONS_RUNNER_DEBUG: true
-  ACTIONS_STEP_DEBUG: true
-```
-
-## Security Best Practices
-
-1. **Never commit tokens**: Always use GitHub secrets
-2. **Limit token scope**: Use minimal required permissions
-3. **Rotate tokens regularly**: Set up automated rotation
-4. **Monitor usage**: Check GitHub Actions logs for unauthorized access
-5. **Use environment protection**: Limit which workflows can access secrets
-
-## Migration from API Keys
-
-To migrate from API key authentication:
-
-1. Keep both workflows during transition
-2. Test OAuth workflow thoroughly
-3. Update all references to use OAuth workflow
-4. Remove API key workflow once confirmed working
-5. Delete `ANTHROPIC_API_KEY` secret
-
-## Additional Resources
-
-- [GitHub Encrypted Secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
-- [OAuth 2.0 Best Practices](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics)
-- [GitHub Actions Security Hardening](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
+1. Complete the repository forking
+2. Add OAuth secrets to repository
+3. Run the test workflow to verify setup
+4. Start using @claude mentions in your issues and PRs!

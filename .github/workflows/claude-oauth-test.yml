@@ -1,0 +1,49 @@
+name: Test Claude OAuth Setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_message:
+        description: 'Test message for Claude'
+        required: false
+        default: 'Hello Claude, please confirm OAuth is working'
+
+jobs:
+  test-oauth:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      
+      - name: Test Claude OAuth
+        id: claude-test
+        uses: RyotaKuzuya/claude-code-action@main
+        with:
+          # OAuth authentication tokens
+          claude_access_token: ${{ secrets.CLAUDE_ACCESS_TOKEN }}
+          claude_refresh_token: ${{ secrets.CLAUDE_REFRESH_TOKEN }}
+          claude_expires_at: ${{ secrets.CLAUDE_EXPIRES_AT }}
+          
+          # GitHub token for repository access
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Test configuration
+          model: 'claude-3-5-sonnet-20241022'
+          max_thinking_steps: 20
+          
+          # Test message
+          input_message: ${{ github.event.inputs.test_message }}
+      
+      - name: Display Test Result
+        run: |
+          echo "Test completed!"
+          echo "Claude Response: ${{ steps.claude-test.outputs.response }}"
