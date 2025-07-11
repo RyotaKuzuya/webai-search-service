@@ -38,9 +38,11 @@ jobs:
       
       - name: Run Claude Code with OAuth
         id: claude
-        # Using the forked action that supports OAuth
-        uses: RyotaKuzuya/claude-code-action@main
+        # Using Akira-Papa's OAuth-enabled fork
+        uses: Akira-Papa/claude-code-action@main
         with:
+          # Enable OAuth authentication
+          use_oauth: 'true'
           # OAuth authentication tokens
           claude_access_token: ${{ secrets.CLAUDE_ACCESS_TOKEN }}
           claude_refresh_token: ${{ secrets.CLAUDE_REFRESH_TOKEN }}
