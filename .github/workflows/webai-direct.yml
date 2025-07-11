@@ -1,0 +1,91 @@
+name: WebAI Direct API
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'WebAI に質問するメッセージ'
+        required: true
+        type: string
+      model:
+        description: '使用するモデル'
+        required: false
+        default: 'opus4'
+        type: choice
+        options:
+          - 'opus4'
+          - 'sonnet4'
+
+jobs:
+  webai-api:
+    runs-on: ubuntu-latest
+    # @webai メンションでトリガー
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@webai'))
+    
+    steps:
+      - name: Setup
+        run: |
+          echo "🤖 WebAI Direct API Workflow Started"
+          echo "This workflow directly calls the WebAI API without Claude Code Action"
+          
+      - name: Extract Message
+        id: extract
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            MESSAGE="${{ github.event.inputs.prompt }}"
+            MODEL="${{ github.event.inputs.model }}"
+          else
+            # Remove @webai mention
+            MESSAGE=$(echo "${{ github.event.comment.body }}" | sed 's/@webai//g' | xargs)
+            MODEL="opus4"
+          fi
+          
+          # Escape for JSON
+          MESSAGE_ESCAPED=$(echo "$MESSAGE" | jq -Rs .)
+          
+          echo "message=$MESSAGE" >> $GITHUB_OUTPUT
+          echo "message_escaped=$MESSAGE_ESCAPED" >> $GITHUB_OUTPUT
+          echo "model=$MODEL" >> $GITHUB_OUTPUT
+          
+      - name: Call WebAI API
+        id: webai
+        run: |
+          echo "Calling WebAI API..."
+          
+          # API request
+          RESPONSE=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -d "{\"message\": ${{ steps.extract.outputs.message_escaped }}, \"model\": \"${{ steps.extract.outputs.model }}\"}" \
+            https://your-domain.com/api/simple/chat)
+          
+          # Extract message from response
+          MESSAGE=$(echo "$RESPONSE" | jq -r '.message // .error // "API呼び出しエラー"' | head -c 10000)
+          
+          # Save to output
+          echo "response<<EOF" >> $GITHUB_OUTPUT
+          echo "$MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+      - name: Comment on Issue
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = `${{ steps.webai.outputs.response }}`;
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🤖 WebAI Response\n\n${response}\n\n---\n_Powered by WebAI Direct API_`
+            });
+            
+      - name: Show Output
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "## 🤖 WebAI Response"
+          echo ""
+          echo "${{ steps.webai.outputs.response }}"

@@ -21,9 +21,10 @@ on:
 jobs:
   trigger-claude:
     runs-on: ubuntu-latest
+    # Claude Code Actionの支払いエラーを回避
     if: |
       github.event_name == 'workflow_dispatch' || 
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@webai'))
     
     steps:
       - name: Extract prompt
@@ -33,8 +34,8 @@ jobs:
             PROMPT="${{ github.event.inputs.prompt }}"
             MODEL="${{ github.event.inputs.model }}"
           else
-            # Remove @claude from comment
-            PROMPT=$(echo "${{ github.event.comment.body }}" | sed 's/@claude//g' | xargs)
+            # Remove @webai from comment
+            PROMPT=$(echo "${{ github.event.comment.body }}" | sed 's/@webai//g' | xargs)
             MODEL="opus4"
           fi
           echo "prompt=$PROMPT" >> $GITHUB_OUTPUT
