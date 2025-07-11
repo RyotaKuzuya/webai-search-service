@@ -88,7 +88,12 @@ class SimpleClaudeSession:
                         stdout_lower = result.stdout.lower()
                         if "api error" in stdout_lower or "error" in stdout_lower:
                             error_msg = result.stdout.strip()
-                    raise Exception(f"Claude CLI error: {error_msg[:200]}")
+                    
+                    # Handle empty or unhelpful error messages
+                    if not error_msg or error_msg.strip() == "":
+                        raise Exception("Claude APIからの応答でエラーが発生しました。しばらくしてからもう一度お試しください。")
+                    else:
+                        raise Exception(f"Claude CLI error: {error_msg[:200]}")
             
             response = result.stdout.strip()
             

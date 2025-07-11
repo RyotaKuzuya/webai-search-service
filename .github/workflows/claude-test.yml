@@ -1,0 +1,26 @@
+name: Test Claude Code OAuth
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-oauth:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Test OAuth Token
+        run: |
+          if [ -z "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" ]; then
+            echo "❌ CLAUDE_CODE_OAUTH_TOKEN is not set"
+            exit 1
+          else
+            echo "✅ CLAUDE_CODE_OAUTH_TOKEN is set"
+            echo "Token length: ${#CLAUDE_CODE_OAUTH_TOKEN}"
+          fi
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          
+      - name: Check Claude GitHub App
+        run: |
+          echo "Ensure Claude GitHub App is installed:"
+          echo "https://github.com/apps/claude"

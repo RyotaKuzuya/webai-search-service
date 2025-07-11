@@ -116,7 +116,7 @@ def chat():
                 else:
                     response = f"APIエラーが発生しました: {response}"
         else:
-            logger.error(f"Claude error: {result.stderr}")
+            logger.error(f"Claude error - Return code: {result.returncode}, Stderr: '{result.stderr}', Stdout length: {len(result.stdout)}")
             error_msg = result.stderr.strip()
             # Also check stdout for error messages (Claude sometimes outputs errors to stdout)
             if not error_msg and result.stdout:
@@ -131,7 +131,11 @@ def chat():
             elif "rate limit" in error_msg.lower():
                 response = "エラー: レート制限に達しました。しばらくお待ちください。"
             else:
-                response = f"申し訳ございません。エラーが発生しました: {error_msg[:200]}"
+                # Handle empty or unhelpful error messages
+                if not error_msg or error_msg == "Claude CLI error: " or error_msg.strip() == "":
+                    response = "申し訳ございません。Claude APIからの応答でエラーが発生しました。しばらくしてからもう一度お試しください。"
+                else:
+                    response = f"申し訳ございません。エラーが発生しました: {error_msg[:200]}"
         
         # Ensure response is not empty
         if not response:
