@@ -47,7 +47,7 @@ jobs:
           RESPONSE=$(curl -s -X POST \
             -H "Content-Type: application/json" \
             -d "{\"message\": \"${{ steps.prompt.outputs.prompt }}\", \"model\": \"${{ steps.prompt.outputs.model }}\"}" \
-            https://your-domain.com:8001/chat || echo '{"error": "API call failed"}')
+            https://your-domain.com/api/simple/chat || echo '{"error": "API call failed"}')
           
           # GitHubの出力制限を考慮して最初の3000文字のみ保存
           echo "response<<EOF" >> $GITHUB_OUTPUT
