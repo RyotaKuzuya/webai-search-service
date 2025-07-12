@@ -246,3 +246,55 @@ claude "コードレビューをしてください" --model sonnet4
 ```
 
 詳細は[GITHUB_ACTIONS_LOCAL.md](GITHUB_ACTIONS_LOCAL.md)を参照してください。
+
+## AI自動改善システム
+
+### 概要
+
+AI自動改善システムは、Claude Code Actionsを活用してアプリケーションを自動的にテスト・評価・改善する仕組みです。
+
+### 機能
+
+1. **定期的な健全性チェック**（毎日深夜2時）
+   - APIエンドポイントの可用性確認
+   - レスポンスタイムの測定
+   - エラーログの分析
+
+2. **継続的モニタリング**（1時間ごと）
+   - システムメトリクスの収集
+   - パフォーマンス劣化の検出
+   - アラート条件に基づくIssue作成
+
+3. **自動改善**
+   - 問題検出時に@claudeメンション付きIssueを自動作成
+   - Claude Code Actionsが問題を分析し改善PRを作成
+
+### セットアップ
+
+```bash
+# 必要なGitHubラベルの作成
+./setup_ai_improvement_labels.sh
+
+# GitHub Secretsの設定
+# CLAUDE_API_KEY: Claude APIキー
+# GITHUB_TOKEN: 自動で提供される
+```
+
+### テスト実行
+
+```bash
+# AI自動改善システムのテスト
+./test_ai_improvement.sh
+```
+
+### ワークフロー
+
+- **AI Auto Test & Improvement**: 定期実行または手動実行でアプリケーションをテスト
+- **Continuous Monitoring & Feedback**: 1時間ごとのメトリクス収集とアラート
+- **Claude Code Actions**: @claudeメンションでAIによる問題解決
+
+### モニタリング
+
+- [GitHub Actions](https://github.com/RyotaKuzuya/webai-search-service/actions)
+- [Issues](https://github.com/RyotaKuzuya/webai-search-service/issues)
+- [Pull Requests](https://github.com/RyotaKuzuya/webai-search-service/pulls)
