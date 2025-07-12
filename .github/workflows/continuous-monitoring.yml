@@ -1,0 +1,274 @@
+name: Continuous Monitoring & Feedback
+
+on:
+  # 1時間ごとに実行
+  schedule:
+    - cron: '0 * * * *'
+  # Pushイベント後も実行
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  monitor-app-metrics:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Monitoring
+        run: |
+          pip install prometheus-client psutil requests
+          
+      - name: Collect Metrics
+        run: |
+          cat > collect_metrics.py << 'EOF'
+          import json
+          import psutil
+          import requests
+          import time
+          from datetime import datetime
+          
+          metrics = {
+              "timestamp": datetime.now().isoformat(),
+              "system": {},
+              "application": {},
+              "errors": [],
+              "alerts": []
+          }
+          
+          # システムメトリクス
+          metrics["system"]["cpu_percent"] = psutil.cpu_percent(interval=1)
+          metrics["system"]["memory_percent"] = psutil.virtual_memory().percent
+          metrics["system"]["disk_usage"] = psutil.disk_usage('/').percent
+          
+          # アプリケーションメトリクス
+          endpoints = [
+              ("simple_api", "http://localhost:8001/health"),
+              ("session_api", "http://localhost:8003/health"),
+              ("web_ui", "http://localhost:5000/")
+          ]
+          
+          for name, url in endpoints:
+              try:
+                  start = time.time()
+                  response = requests.get(url, timeout=5)
+                  elapsed = time.time() - start
+                  
+                  metrics["application"][name] = {
+                      "status": response.status_code,
+                      "response_time": elapsed,
+                      "available": response.status_code == 200
+                  }
+                  
+                  # アラート条件
+                  if elapsed > 3:
+                      metrics["alerts"].append(f"{name} slow response: {elapsed:.2f}s")
+                  if response.status_code != 200:
+                      metrics["alerts"].append(f"{name} unhealthy: {response.status_code}")
+                      
+              except Exception as e:
+                  metrics["application"][name] = {
+                      "status": 0,
+                      "error": str(e),
+                      "available": False
+                  }
+                  metrics["alerts"].append(f"{name} is down: {str(e)}")
+          
+          # エラーログ分析
+          try:
+              with open("simple_api.log", "r") as f:
+                  recent_logs = f.readlines()[-100:]
+                  
+              error_patterns = {
+                  "rate_limit": "rate limit",
+                  "timeout": "timeout",
+                  "connection": "connection",
+                  "authentication": "auth"
+              }
+              
+              for pattern_name, pattern in error_patterns.items():
+                  count = sum(1 for line in recent_logs if pattern in line.lower())
+                  if count > 5:
+                      metrics["errors"].append({
+                          "type": pattern_name,
+                          "count": count,
+                          "severity": "high" if count > 10 else "medium"
+                      })
+          except:
+              pass
+          
+          # メトリクスを保存
+          with open("metrics.json", "w") as f:
+              json.dump(metrics, f, indent=2)
+          
+          # 前回のメトリクスと比較
+          try:
+              with open("previous_metrics.json", "r") as f:
+                  previous = json.load(f)
+              
+              # パフォーマンス劣化を検出
+              for endpoint in metrics["application"]:
+                  if endpoint in previous.get("application", {}):
+                      current_time = metrics["application"][endpoint].get("response_time", 0)
+                      previous_time = previous["application"][endpoint].get("response_time", 0)
+                      
+                      if current_time > previous_time * 1.5:
+                          metrics["alerts"].append(
+                              f"Performance degradation in {endpoint}: {previous_time:.2f}s -> {current_time:.2f}s"
+                          )
+          except:
+              pass
+          
+          # 現在のメトリクスを保存
+          with open("previous_metrics.json", "w") as f:
+              json.dump(metrics, f, indent=2)
+          
+          print(json.dumps(metrics, indent=2))
+          EOF
+          
+          python collect_metrics.py
+          
+      - name: Analyze Trends
+        id: analyze
+        run: |
+          cat > analyze_trends.py << 'EOF'
+          import json
+          import statistics
+          
+          with open("metrics.json", "r") as f:
+              current = json.load(f)
+          
+          # アラートがある場合はIssueを作成する必要がある
+          needs_attention = len(current.get("alerts", [])) > 0
+          high_severity_errors = any(
+              error.get("severity") == "high" 
+              for error in current.get("errors", [])
+          )
+          
+          print(f"::set-output name=needs_attention::{needs_attention or high_severity_errors}")
+          print(f"::set-output name=metrics::{json.dumps(current)}")
+          EOF
+          
+          python analyze_trends.py
+          
+      - name: Create Alert Issue
+        if: steps.analyze.outputs.needs_attention == 'True'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const metrics = ${{ steps.analyze.outputs.metrics }};
+            
+            const issueBody = `## 🚨 アプリケーション監視アラート
+            
+            **検出時刻**: ${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}
+            
+            ### アラート
+            ${metrics.alerts.map(alert => `- ⚠️ ${alert}`).join('\n')}
+            
+            ### エラー傾向
+            ${metrics.errors.map(error => 
+              `- ${error.type}: ${error.count}件 (重要度: ${error.severity})`
+            ).join('\n')}
+            
+            ### システムメトリクス
+            - CPU使用率: ${metrics.system.cpu_percent}%
+            - メモリ使用率: ${metrics.system.memory_percent}%
+            - ディスク使用率: ${metrics.system.disk_usage}%
+            
+            ### アプリケーションステータス
+            ${Object.entries(metrics.application).map(([name, data]) => 
+              `- ${name}: ${data.available ? '✅' : '❌'} (応答時間: ${data.response_time?.toFixed(2)}s)`
+            ).join('\n')}
+            
+            ---
+            
+            @claude この監視アラートを分析して、以下を実施してください：
+            
+            1. 根本原因の分析
+            2. 即座の対処法の提案
+            3. 長期的な改善策の提案
+            4. 必要に応じて修正PRの作成
+            
+            特に以下の観点で分析してください：
+            - パフォーマンスのボトルネック
+            - エラーパターンの原因
+            - システムリソースの最適化
+            - 予防的対策の実装
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 監視アラート: ${metrics.alerts[0] || 'システム異常検出'}`,
+              body: issueBody,
+              labels: ['monitoring-alert', 'priority:high', 'ai-analysis']
+            });
+            
+  user-feedback-collection:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Collect User Feedback
+        run: |
+          # ユーザーフィードバックの収集（実際にはログやDBから）
+          cat > feedback_analysis.py << 'EOF'
+          import json
+          import random
+          
+          # シミュレートされたフィードバック
+          feedback = {
+              "response_times": [
+                  random.uniform(0.5, 5.0) for _ in range(100)
+              ],
+              "error_reports": [
+                  "ログインできない",
+                  "レスポンスが遅い",
+                  "エラーメッセージが分かりにくい"
+              ],
+              "feature_requests": [
+                  "ダークモードの改善",
+                  "検索機能の強化",
+                  "モバイル対応の改善"
+              ],
+              "satisfaction_score": random.uniform(3.0, 5.0)
+          }
+          
+          # 分析
+          avg_response_time = sum(feedback["response_times"]) / len(feedback["response_times"])
+          slow_requests = sum(1 for t in feedback["response_times"] if t > 3.0)
+          
+          analysis = {
+              "avg_response_time": avg_response_time,
+              "slow_request_percentage": (slow_requests / len(feedback["response_times"])) * 100,
+              "top_issues": feedback["error_reports"][:3],
+              "satisfaction_score": feedback["satisfaction_score"],
+              "improvement_areas": []
+          }
+          
+          if avg_response_time > 2.0:
+              analysis["improvement_areas"].append("パフォーマンス最適化")
+          
+          if analysis["satisfaction_score"] < 4.0:
+              analysis["improvement_areas"].append("ユーザビリティ改善")
+          
+          with open("feedback_analysis.json", "w") as f:
+              json.dump(analysis, f, indent=2)
+          
+          EOF
+          
+          python feedback_analysis.py
+          
+      - name: Upload Analytics
+        uses: actions/upload-artifact@v3
+        with:
+          name: monitoring-data
+          path: |
+            metrics.json
+            feedback_analysis.json

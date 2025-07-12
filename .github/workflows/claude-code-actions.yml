@@ -1,115 +1,25 @@
 name: Claude Code Actions
 
 on:
-  # Issueコメントで@claudeメンションされた時
   issue_comment:
     types: [created]
-  # PRコメントで@claudeメンションされた時  
-  pull_request_review_comment:
-    types: [created]
-  # PRが作成・更新された時
   pull_request:
-    types: [opened, synchronize, reopened]
-  # 手動実行
-  workflow_dispatch:
-    inputs:
-      prompt:
-        description: 'Claudeに実行させるタスク'
-        required: true
-        type: string
-      
+    types: [opened, synchronize]
+
 permissions:
   contents: write
-  pull-requests: write
   issues: write
-  actions: read
+  pull-requests: write
 
 jobs:
   claude-code:
     runs-on: ubuntu-latest
-    # @claudeメンションがある場合のみ実行
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request') ||
-      (github.event_name == 'workflow_dispatch')
+      github.event_name == 'pull_request'
     
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: anthropics/claude-code-action@v1
         with:
-          fetch-depth: 0
-          
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          
-      - name: Install Claude CLI
-        run: |
-          # Claude CLIのインストール（必要に応じて）
-          echo "Claude CLI is assumed to be available in the Action environment"
-          
-      - name: Process with Claude
-        env:
-          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-          # またはOAuthトークンを使用
-          CLAUDE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-        run: |
-          # コメント内容を取得
-          if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
-            PROMPT="${{ github.event.comment.body }}"
-          elif [[ "${{ github.event_name }}" == "pull_request_review_comment" ]]; then
-            PROMPT="${{ github.event.comment.body }}"
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            PROMPT="このPRをレビューして、改善点を提案してください。"
-          else
-            PROMPT="${{ github.event.inputs.prompt }}"
-          fi
-          
-          # @claudeメンションを削除
-          PROMPT=$(echo "$PROMPT" | sed 's/@claude//g')
-          
-          # Claudeの応答を取得（実際の実装に応じて調整）
-          echo "Processing prompt: $PROMPT"
-          
-          # 結果を環境変数に保存
-          echo "CLAUDE_RESPONSE=Claudeの応答がここに入ります" >> $GITHUB_ENV
-          
-      - name: Comment on Issue
-        if: github.event_name == 'issue_comment'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const response = process.env.CLAUDE_RESPONSE || 'Claudeからの応答を取得できませんでした。';
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## 🤖 Claude Code Response\n\n${response}`
-            });
-            
-      - name: Comment on PR
-        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review_comment'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const response = process.env.CLAUDE_RESPONSE || 'Claudeからの応答を取得できませんでした。';
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## 🤖 Claude Code Review\n\n${response}`
-            });
-            
-      - name: Add processed label
-        if: github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.addLabels({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              labels: ['claude-processed']
-            });
+          claude_api_key: ${{ secrets.CLAUDE_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
