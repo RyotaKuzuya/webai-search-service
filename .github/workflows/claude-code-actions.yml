@@ -21,5 +21,6 @@ jobs:
     steps:
       - uses: anthropics/claude-code-action@v1
         with:
-          claude_api_key: ${{ secrets.CLAUDE_API_KEY }}
+          # Claude Max Plan OAuth認証を使用
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
