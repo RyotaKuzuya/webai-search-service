@@ -275,9 +275,12 @@ AI自動改善システムは、Claude Code Actionsを活用してアプリケ�
 # 必要なGitHubラベルの作成
 ./setup_ai_improvement_labels.sh
 
-# GitHub Secretsの設定
-# CLAUDE_API_KEY: Claude APIキー
+# GitHub Secretsの設定（Claude Max Plan用）
+# CLAUDE_CODE_OAUTH_TOKEN: Claude OAuth トークン（設定済み）
 # GITHUB_TOKEN: 自動で提供される
+
+# OAuth トークンの確認・更新が必要な場合
+./generate_claude_oauth_token.sh
 ```
 
 ### テスト実行
