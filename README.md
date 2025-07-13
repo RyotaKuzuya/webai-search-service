@@ -203,10 +203,6 @@ docker-compose build
 docker-compose up -d
 ```
 
-## ライセンス
-
-このプロジェクトは内部使用を目的としています。
-
 ## サポート
 
 問題が発生した場合は、[DEPLOYMENT.md](./DEPLOYMENT.md)のトラブルシューティングセクションを参照してください。
