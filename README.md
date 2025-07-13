@@ -301,3 +301,6 @@ AI自動改善システムは、Claude Code Actionsを活用してアプリケ�
 - [GitHub Actions](https://github.com/RyotaKuzuya/webai-search-service/actions)
 - [Issues](https://github.com/RyotaKuzuya/webai-search-service/issues)
 - [Pull Requests](https://github.com/RyotaKuzuya/webai-search-service/pulls)
+## ライセンス
+
+このプロジェクトはMITライセンスの下で公開されています。詳細は[LICENSE](LICENSE)ファイルを参照してください。
