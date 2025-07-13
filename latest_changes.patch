@@ -1,0 +1,145 @@
+From 810ce6454c1f69c7fa1c6ec27f7c9369740d9628 Mon Sep 17 00:00:00 2001
+From: Kuzuya <kuzuya@your-domain.com>
+Date: Sun, 13 Jul 2025 10:53:57 +0900
+Subject: [PATCH] =?UTF-8?q?=F0=9F=8E=89=20Re-enable=20GitHub=20Actions=20w?=
+ =?UTF-8?q?ith=20Claude=20Max=20Plan=20support!?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+GREAT NEWS: Claude Code v1.0.44+ now supports Max Plan for GitHub Actions!
+- Re-added workflow with OAuth token authentication
+- Claude Code v1.0.51 installed (supports Max Plan)
+- Free GitHub Actions (public repo) + Free Claude API (Max Plan)
+
+Setup complete! Ready to test with @claude mentions.
+---
+ .github/workflows/claude-max-plan.yml | 25 +++++++++
+ GREAT_NEWS_MAX_PLAN_SUPPORTED.md      | 81 +++++++++++++++++++++++++++
+ 2 files changed, 106 insertions(+)
+ create mode 100644 .github/workflows/claude-max-plan.yml
+ create mode 100644 GREAT_NEWS_MAX_PLAN_SUPPORTED.md
+
+diff --git a/.github/workflows/claude-max-plan.yml b/.github/workflows/claude-max-plan.yml
+new file mode 100644
+index 0000000..6bfa276
+--- /dev/null
++++ b/.github/workflows/claude-max-plan.yml
+@@ -0,0 +1,25 @@
++name: Claude Max Plan Actions
++
++on:
++  issue_comment:
++    types: [created]
++  pull_request:
++    types: [opened, synchronize]
++
++permissions:
++  contents: write
++  issues: write
++  pull-requests: write
++
++jobs:
++  claude-code:
++    runs-on: ubuntu-latest
++    if: |
++      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
++      github.event_name == 'pull_request'
++    
++    steps:
++      - uses: anthropics/claude-code-action@main
++        with:
++          # Claude Max Plan OAuth Token (v1.0.44以降でサポート)
++          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+\ No newline at end of file
+diff --git a/GREAT_NEWS_MAX_PLAN_SUPPORTED.md b/GREAT_NEWS_MAX_PLAN_SUPPORTED.md
+new file mode 100644
+index 0000000..6579452
+--- /dev/null
++++ b/GREAT_NEWS_MAX_PLAN_SUPPORTED.md
+@@ -0,0 +1,81 @@
++# 🎉 朗報：Claude Max Plan が GitHub Actions でサポートされました！
++
++## 📅 最新情報（5日前）
++
++Anthropic開発者（ashwin-ant）からの公式発表：
++
++> "We've added support using this GitHub action with Claude Max. If you update Claude Code to 1.0.44, then /install-github-app command will walk you through the setup."
++
++**Claude Code 1.0.44 以降で Max Plan が使用可能になりました！**
++
++## 🚀 セットアップ手順
++
++### 1. Claude Code を最新版にアップデート
++```bash
++# Claude Code のバージョン確認
++claude --version
++
++# 1.0.44以降でない場合は更新
++curl -fsSL https://cli.claude.ai/install.sh | sh
++```
++
++### 2. GitHub App をインストール
++```bash
++# Claude Code内で実行
++claude
++/install-github-app
++```
++
++### 3. OAuthトークンを生成（代替方法）
++```bash
++# 手動でトークン生成
++claude setup-token
++```
++
++### 4. GitHub Secretsに設定
++- Name: `CLAUDE_CODE_OAUTH_TOKEN`
++- Value: 生成されたトークン
++
++### 5. ワークフローを復活
++```yaml
++name: Claude Code Actions
++
++on:
++  issue_comment:
++    types: [created]
++
++permissions:
++  contents: write
++  issues: write
++  pull-requests: write
++
++jobs:
++  claude-code:
++    runs-on: ubuntu-latest
++    if: contains(github.event.comment.body, '@claude')
++    
++    steps:
++      - uses: anthropics/claude-code-action@main
++        with:
++          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
++```
++
++## ⚠️ 重要な注意
++
++> "Claude Max subscriptions are intended for a single user"
++
++- Max Planは個人利用向け
++- 複数ユーザーのリポジトリにはAPIキー推奨
++
++## ✅ つまり
++
++**Max Plan で GitHub Actions が無料で使えるようになりました！**
++
++1. Claude Code を 1.0.44 以降に更新
++2. OAuthトークンで認証
++3. GitHub Actions 無料（Publicリポジトリ）
++4. Claude API 無料（Max Plan）
++
++## 🎊 結論
++
++当初の期待通り、Max Plan で完全無料の GitHub Actions + Claude AI が実現可能になりました！
+\ No newline at end of file
+-- 
+2.34.1
+
