@@ -1,0 +1,25 @@
+name: Claude Max Plan Actions
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  claude-code:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      github.event_name == 'pull_request'
+    
+    steps:
+      - uses: anthropics/claude-code-action@main
+        with:
+          # Claude Max Plan OAuth Token (v1.0.44以降でサポート)
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
