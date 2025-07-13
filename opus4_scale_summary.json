@@ -1,8 +1,0 @@
-{
-  "total_requests": 10000,
-  "successful": 9981,
-  "failed": 19,
-  "duration_hours": 2.532885802189509,
-  "requests_per_second": 1.0966849651794708,
-  "timestamp": "2025-07-05T14:01:34.359905"
-}
