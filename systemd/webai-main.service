@@ -1,0 +1,15 @@
+[Unit]
+Description=WebAI Main Application (Port 5000)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/webai
+Environment="PATH=/home/ubuntu/webai/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/home/ubuntu/webai/venv/bin/python3 /home/ubuntu/webai/app.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

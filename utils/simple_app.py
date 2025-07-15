@@ -14,7 +14,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from werkzeug.security import check_password_hash, generate_password_hash
 import logging
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='../templates', static_folder='../static')
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-here-change-in-production')
 
 # Configure Flask-Login
@@ -102,6 +102,20 @@ def login():
             return render_template('login.html', error='ユーザー名またはパスワードが間違っています')
     
     return render_template('login.html')
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """API endpoint for login"""
+    data = request.get_json()
+    username = data.get('username', '')
+    password = data.get('password', '')
+    
+    if username in USERS and check_password_hash(USERS[username], password):
+        user = User(username)
+        login_user(user)
+        return jsonify({'success': True, 'username': username})
+    else:
+        return jsonify({'success': False, 'error': 'ユーザー名またはパスワードが間違っています'}), 401
 
 @app.route('/logout')
 @login_required
