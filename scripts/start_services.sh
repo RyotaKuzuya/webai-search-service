@@ -3,26 +3,29 @@
 
 echo "Starting WebAI services..."
 
+# External HDD log directory
+LOG_DIR="/mnt/external-hdd/webai-data/logs"
+
 # Check if services are already running
 if pgrep -f "simple_app.py" > /dev/null; then
     echo "simple_app.py is already running"
 else
     echo "Starting simple_app.py..."
-    nohup python3 simple_app.py > simple_app.log 2>&1 &
+    cd /home/ubuntu/webai && nohup python3 utils/simple_app.py > "$LOG_DIR/simple_app.log" 2>&1 &
 fi
 
 if pgrep -f "simple_api.py" > /dev/null; then
     echo "simple_api.py is already running"
 else
     echo "Starting simple_api.py..."
-    nohup python3 simple_api.py > simple_api.log 2>&1 &
+    cd /home/ubuntu/webai && nohup python3 utils/simple_api.py > "$LOG_DIR/simple_api.log" 2>&1 &
 fi
 
 if pgrep -f "claude_simple_session_api.py" > /dev/null; then
     echo "claude_simple_session_api.py is already running"
 else
     echo "Starting claude_simple_session_api.py..."
-    nohup python3 claude_simple_session_api.py > claude_simple_session_api.log 2>&1 &
+    cd /home/ubuntu/webai && nohup python3 utils/claude_simple_session_api.py > "$LOG_DIR/claude_simple_session_api.log" 2>&1 &
 fi
 
 sleep 2

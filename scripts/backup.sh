@@ -6,7 +6,8 @@
 set -e
 
 # Configuration
-BACKUP_DIR="${BACKUP_DIR:-/home/ubuntu/backups/webai}"
+# Use external HDD for backups to save space
+BACKUP_DIR="${BACKUP_DIR:-/mnt/external-hdd/webai-data/backups}"
 RETENTION_DAYS=30
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_NAME="webai_backup_${TIMESTAMP}"

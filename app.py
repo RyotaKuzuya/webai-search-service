@@ -16,6 +16,7 @@ import queue
 import re
 from dotenv import load_dotenv
 from session_manager import SessionManager
+from config import DB_PATH, APP_LOG
 
 # Load environment variables from .env file
 load_dotenv()
@@ -23,7 +24,8 @@ load_dotenv()
 app = Flask(__name__)
 
 # Initialize session manager
-session_manager = SessionManager('webai.db')
+# Use external HDD for database storage
+session_manager = SessionManager(DB_PATH)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
