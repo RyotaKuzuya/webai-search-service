@@ -134,6 +134,15 @@ def chat():
         message = data.get('message', '')
         model = data.get('model', 'claude-opus-4-20250514')
         
+        # Convert short model names to full names
+        model_mapping = {
+            'opus': 'claude-opus-4-20250514',
+            'opus4': 'claude-opus-4-20250514',
+            'sonnet': 'claude-3.5-sonnet-20240620',
+            'haiku': 'claude-3.5-haiku-20241022'
+        }
+        model = model_mapping.get(model, model)
+        
         if not message:
             return jsonify({"error": "No message provided"}), 400
         
