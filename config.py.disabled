@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+"""
+WebAI Configuration - External HDD Storage Settings
+"""
+import os
+
+# Base paths for external HDD storage
+EXTERNAL_HDD_BASE = '/mnt/external-hdd/webai-data'
+DB_PATH = os.path.join(EXTERNAL_HDD_BASE, 'db', 'webai.db')
+LOG_DIR = os.path.join(EXTERNAL_HDD_BASE, 'logs')
+UPLOAD_DIR = os.path.join(EXTERNAL_HDD_BASE, 'uploads')
+CACHE_DIR = os.path.join(EXTERNAL_HDD_BASE, 'cache')
+
+# Ensure directories exist
+for directory in [LOG_DIR, UPLOAD_DIR, CACHE_DIR]:
+    os.makedirs(directory, exist_ok=True)
+
+# Log file paths
+APP_LOG = os.path.join(LOG_DIR, 'app.log')
+SIMPLE_API_LOG = os.path.join(LOG_DIR, 'simple_api.log')
+CLAUDE_SESSION_API_LOG = os.path.join(LOG_DIR, 'claude_simple_session_api.log')
+WEBAI_LOG = os.path.join(LOG_DIR, 'webai.log')
