@@ -11,7 +11,11 @@ import os
 
 class SessionManager:
     def __init__(self, db_path='webai.db'):
-        self.db_path = db_path
+        # Check if db_path is a symlink and resolve it
+        if os.path.islink(db_path):
+            self.db_path = os.path.realpath(db_path)
+        else:
+            self.db_path = db_path
         self._init_db()
     
     def _init_db(self):
