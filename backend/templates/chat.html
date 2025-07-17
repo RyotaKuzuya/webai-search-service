@@ -127,21 +127,39 @@
                 <form id="chatForm" class="flex gap-3">
                     <div class="flex-1 relative">
                         <textarea id="messageInput" 
-                                  class="w-full px-4 py-3 pr-12 bg-bg-secondary border border-border-primary 
+                                  class="w-full px-4 py-3 pr-20 bg-bg-secondary border border-border-primary 
                                          rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary
                                          text-text-primary placeholder-text-secondary"
                                   placeholder="メッセージを入力してください..."
                                   rows="1"
                                   style="min-height: 48px; max-height: 200px;"></textarea>
-                        <button type="submit" 
-                                class="absolute right-2 bottom-2 p-2 bg-primary hover:bg-green-600 
-                                       text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
+                        <div class="absolute right-2 bottom-2 flex gap-2">
+                            <!-- File Upload Button -->
+                            <input type="file" id="fileInput" class="hidden" accept=".xlsx,.xls,.csv,.pdf,.docx,.doc,.txt">
+                            <button type="button" id="uploadBtn"
+                                    class="p-2 text-text-secondary hover:text-primary transition-colors"
+                                    title="ファイルをアップロード">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <!-- Send Button -->
+                            <button type="submit" 
+                                    class="p-2 bg-primary hover:bg-green-600 
+                                           text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
                     </div>
                 </form>
-                <div class="text-xs text-text-secondary text-center mt-2">
-                    WebAIは間違いを犯す可能性があります。重要な情報は確認してください。
+                <div class="mt-2">
+                    <div id="fileStatus" class="text-xs text-text-secondary mb-1"></div>
+                    <div id="uploadProgress" class="hidden mb-2">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="progressBar" class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-text-secondary text-center">
+                        WebAIは間違いを犯す可能性があります。重要な情報は確認してください。
+                    </div>
                 </div>
             </div>
         </div>
@@ -225,6 +243,11 @@ const webSearchToggle = document.getElementById('webSearchToggle');
 const newChatBtn = document.getElementById('newChatBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const themeToggle = document.getElementById('themeToggle');
+const fileInput = document.getElementById('fileInput');
+const uploadBtn = document.getElementById('uploadBtn');
+const fileStatus = document.getElementById('fileStatus');
+const uploadProgress = document.getElementById('uploadProgress');
+const progressBar = document.getElementById('progressBar');
 
 // Auto-resize textarea
 messageInput.addEventListener('input', function() {
@@ -489,6 +512,113 @@ const originalMessageReceived = socket.on('message_received');
 socket.on('message_received', (data) => {
     console.log('[DEBUG] Message acknowledged by server:', data);
     startMessageTimeout();
+});
+
+// File upload handling
+uploadBtn.addEventListener('click', () => {
+    fileInput.click();
+});
+
+fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Check file size (16MB limit)
+    const maxSize = 16 * 1024 * 1024;
+    if (file.size > maxSize) {
+        fileStatus.textContent = 'エラー: ファイルサイズが16MBを超えています';
+        fileStatus.classList.add('text-red-500');
+        fileInput.value = '';
+        return;
+    }
+    
+    // Show uploading status
+    fileStatus.textContent = `アップロード中: ${file.name}`;
+    fileStatus.classList.remove('text-red-500');
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    // Show progress bar
+    uploadProgress.classList.remove('hidden');
+    progressBar.style.width = '0%';
+    
+    // Create FormData
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        // Simulate progress (since fetch doesn't support upload progress)
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 10;
+            if (progress <= 90) {
+                progressBar.style.width = progress + '%';
+            }
+        }, 100);
+        
+        // Upload file
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        // Complete progress
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Insert converted text into message input
+            const convertedText = result.text;
+            const currentText = messageInput.value;
+            
+            // Add file info and converted text
+            const fileInfo = `[ファイル: ${result.filename}]\n\n`;
+            const newText = currentText ? 
+                currentText + '\n\n' + fileInfo + convertedText : 
+                fileInfo + convertedText;
+            
+            messageInput.value = newText;
+            
+            // Auto-resize textarea
+            messageInput.style.height = 'auto';
+            messageInput.style.height = messageInput.scrollHeight + 'px';
+            
+            // Update status
+            fileStatus.textContent = `変換完了: ${result.filename} (${result.length}文字)`;
+            fileStatus.classList.remove('text-red-500');
+            
+            // Clear file input
+            fileInput.value = '';
+            
+            // Clear status after 5 seconds
+            setTimeout(() => {
+                fileStatus.textContent = '';
+                uploadProgress.classList.add('hidden');
+            }, 5000);
+        } else {
+            // Show error
+            fileStatus.textContent = `エラー: ${result.error}`;
+            fileStatus.classList.add('text-red-500');
+            fileInput.value = '';
+        }
+    } catch (error) {
+        console.error('Upload error:', error);
+        fileStatus.textContent = 'アップロードエラー: ネットワークエラー';
+        fileStatus.classList.add('text-red-500');
+        fileInput.value = '';
+    } finally {
+        // Reset upload button
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-paperclip"></i>';
+        
+        // Hide progress bar after a delay
+        setTimeout(() => {
+            uploadProgress.classList.add('hidden');
+            progressBar.style.width = '0%';
+        }, 1000);
+    }
 });
 
 // Focus on input

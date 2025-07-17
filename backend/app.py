@@ -4,12 +4,21 @@ import logging
 import json
 from datetime import datetime, timedelta
 from functools import wraps
+import tempfile
+import hashlib
+import re
+from pathlib import Path
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_socketio import SocketIO, emit, disconnect
 from flask_cors import CORS
 import requests
 from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
+import pandas as pd
+import chardet
+from PyPDF2 import PdfReader
+from docx import Document
 
 # Load environment variables
 load_dotenv()
@@ -28,6 +37,11 @@ app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
+
+# File upload configuration
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'csv', 'pdf', 'docx', 'doc', 'txt'}
+UPLOAD_FOLDER = tempfile.gettempdir()
 
 # CORS configuration
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -55,6 +69,133 @@ CLAUDE_API_URL = os.environ.get('CLAUDE_API_URL', 'http://host.docker.internal:8
 
 # Active sessions tracking
 active_sessions = {}
+
+
+def allowed_file(filename):
+    """Check if file extension is allowed"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def sanitize_filename(filename):
+    """Sanitize filename to prevent security issues"""
+    # Get the file extension
+    name, ext = os.path.splitext(filename)
+    # Remove any path components
+    name = os.path.basename(name)
+    # Remove special characters
+    name = re.sub(r'[^\w\s-]', '', name)
+    name = re.sub(r'[-\s]+', '-', name)
+    # Add timestamp hash for uniqueness
+    timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+    hash_suffix = hashlib.md5(f"{name}{timestamp}".encode()).hexdigest()[:8]
+    return f"{name}_{hash_suffix}{ext}"
+
+
+def detect_encoding(file_path):
+    """Detect file encoding"""
+    with open(file_path, 'rb') as f:
+        raw_data = f.read()
+        result = chardet.detect(raw_data)
+        return result['encoding'] or 'utf-8'
+
+
+def convert_excel_to_text(file_path):
+    """Convert Excel file to text format"""
+    try:
+        # Read Excel file
+        df = pd.read_excel(file_path, sheet_name=None)
+        
+        text_output = []
+        
+        # Process each sheet
+        for sheet_name, sheet_df in df.items():
+            text_output.append(f"=== Sheet: {sheet_name} ===\n")
+            
+            # Convert to string representation
+            text_output.append(sheet_df.to_string(index=False))
+            text_output.append("\n\n")
+        
+        return '\n'.join(text_output)
+    except Exception as e:
+        logger.error(f"Error converting Excel file: {e}")
+        return f"Error converting Excel file: {str(e)}"
+
+
+def convert_csv_to_text(file_path):
+    """Convert CSV file to text format"""
+    try:
+        # Detect encoding
+        encoding = detect_encoding(file_path)
+        
+        # Read CSV file
+        df = pd.read_csv(file_path, encoding=encoding)
+        
+        # Convert to string representation
+        return df.to_string(index=False)
+    except Exception as e:
+        logger.error(f"Error converting CSV file: {e}")
+        return f"Error converting CSV file: {str(e)}"
+
+
+def convert_pdf_to_text(file_path):
+    """Convert PDF file to text format"""
+    try:
+        reader = PdfReader(file_path)
+        text_output = []
+        
+        for i, page in enumerate(reader.pages):
+            text_output.append(f"=== Page {i + 1} ===\n")
+            text_output.append(page.extract_text())
+            text_output.append("\n\n")
+        
+        return '\n'.join(text_output)
+    except Exception as e:
+        logger.error(f"Error converting PDF file: {e}")
+        return f"Error converting PDF file: {str(e)}"
+
+
+def convert_docx_to_text(file_path):
+    """Convert DOCX file to text format"""
+    try:
+        doc = Document(file_path)
+        text_output = []
+        
+        for paragraph in doc.paragraphs:
+            text_output.append(paragraph.text)
+        
+        # Also extract text from tables
+        for table in doc.tables:
+            for row in table.rows:
+                row_text = '\t'.join(cell.text for cell in row.cells)
+                text_output.append(row_text)
+        
+        return '\n'.join(text_output)
+    except Exception as e:
+        logger.error(f"Error converting DOCX file: {e}")
+        return f"Error converting DOCX file: {str(e)}"
+
+
+def convert_file_to_text(file_path, filename):
+    """Convert various file formats to text"""
+    ext = filename.rsplit('.', 1)[1].lower()
+    
+    if ext in ['xlsx', 'xls']:
+        return convert_excel_to_text(file_path)
+    elif ext == 'csv':
+        return convert_csv_to_text(file_path)
+    elif ext == 'pdf':
+        return convert_pdf_to_text(file_path)
+    elif ext == 'docx':
+        return convert_docx_to_text(file_path)
+    elif ext == 'doc':
+        # For older .doc files, we'll return a message since python-docx doesn't support them
+        return "注意: .doc形式（古いWord形式）は直接変換できません。.docx形式で保存し直してからアップロードしてください。"
+    elif ext == 'txt':
+        encoding = detect_encoding(file_path)
+        with open(file_path, 'r', encoding=encoding) as f:
+            return f.read()
+    else:
+        return "Unsupported file format"
 
 
 def login_required(f):
@@ -123,6 +264,69 @@ def api_logout():
     session.clear()
     logger.info(f"User {username} logged out")
     return jsonify({'success': True})
+
+
+@app.route('/api/upload', methods=['POST'])
+@login_required
+def api_upload():
+    """Handle file upload and convert to text"""
+    try:
+        # Check if file is in request
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        
+        # Check if file is selected
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No file selected'}), 400
+        
+        # Check if file is allowed
+        if not allowed_file(file.filename):
+            return jsonify({
+                'success': False, 
+                'error': f'Invalid file type. Allowed types: {", ".join(ALLOWED_EXTENSIONS)}'
+            }), 400
+        
+        # Sanitize filename
+        original_filename = file.filename
+        safe_filename = sanitize_filename(file.filename)
+        
+        # Save file temporarily
+        temp_path = os.path.join(UPLOAD_FOLDER, safe_filename)
+        file.save(temp_path)
+        
+        logger.info(f"File uploaded: {original_filename} -> {safe_filename}")
+        
+        try:
+            # Convert file to text
+            text_content = convert_file_to_text(temp_path, safe_filename)
+            
+            # Clean up temporary file
+            os.unlink(temp_path)
+            
+            # Log success
+            logger.info(f"File converted successfully: {original_filename}")
+            
+            return jsonify({
+                'success': True,
+                'filename': original_filename,
+                'text': text_content,
+                'length': len(text_content)
+            })
+            
+        except Exception as e:
+            # Clean up temporary file on error
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+            raise e
+            
+    except Exception as e:
+        logger.error(f"File upload error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'File processing error: {str(e)}'
+        }), 500
 
 
 @app.route('/api/health', methods=['GET'])
