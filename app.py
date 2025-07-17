@@ -16,6 +16,8 @@ import queue
 import re
 from dotenv import load_dotenv
 from session_manager import SessionManager
+from file_converter import FileConverter
+from werkzeug.utils import secure_filename
 # from config import DB_PATH, APP_LOG  # Disabled after rollback
 
 # Load environment variables from .env file
@@ -26,7 +28,10 @@ app = Flask(__name__)
 # Initialize session manager
 # Use external HDD for database storage
 session_manager = SessionManager('webai.db')
+file_converter = FileConverter()
+
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # 管理者アカウント (環境変数から取得)
@@ -311,6 +316,53 @@ def delete_chat(chat_id):
     
     session_manager.delete_chat(chat_id)
     return jsonify({'success': True})
+
+@app.route('/api/upload', methods=['POST'])
+def api_upload():
+    """Handle file upload and convert to text"""
+    if 'username' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'ファイルが選択されていません'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'ファイルが選択されていません'}), 400
+    
+    try:
+        # Check if file is allowed
+        if not file_converter.is_allowed_file(file.filename):
+            return jsonify({'error': '対応していないファイル形式です'}), 400
+        
+        # Save file temporarily
+        filename = secure_filename(file.filename)
+        filename = file_converter.sanitize_filename(filename)
+        
+        # Create temp directory if not exists
+        temp_dir = os.path.join(os.path.dirname(__file__), 'temp_uploads')
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        file_path = os.path.join(temp_dir, filename)
+        file.save(file_path)
+        
+        # Convert to text
+        text_content = file_converter.convert_to_text(file_path, filename)
+        
+        # Clean up - remove temporary file
+        try:
+            os.remove(file_path)
+        except:
+            pass
+        
+        return jsonify({
+            'success': True,
+            'text': text_content,
+            'filename': file.filename
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'ファイル処理エラー: {str(e)}'}), 500
 
 @app.route('/api/monitor', methods=['GET'])
 def api_monitor():
