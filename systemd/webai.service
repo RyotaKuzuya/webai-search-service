@@ -1,0 +1,18 @@
+[Unit]
+Description=WebAI Flask Application
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/webai
+ExecStartPre=/usr/bin/pkill -f "app.py" || true
+ExecStartPre=/usr/bin/pkill -f "simple_api.py" || true
+ExecStart=/home/ubuntu/webai/scripts/start_all_services.sh
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/ubuntu/webai/app.log
+StandardError=append:/home/ubuntu/webai/app.log
+
+[Install]
+WantedBy=multi-user.target

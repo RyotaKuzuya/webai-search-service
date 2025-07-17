@@ -2351,15 +2351,23 @@
             const file = event.target.files[0];
             if (!file) return;
             
+            // Check file size (50MB limit)
+            if (file.size > 50 * 1024 * 1024) {
+                showNotification('ファイルサイズが大きすぎます（最大50MB）', 'error');
+                event.target.value = '';
+                return;
+            }
+            
             const formData = new FormData();
             formData.append('file', file);
             
             try {
-                showTypingIndicator();
+                showNotification(`ファイル「${file.name}」を処理中...`, 'info');
                 
                 const response = await fetch('/api/upload', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'same-origin'
                 });
                 
                 if (response.ok) {
@@ -2372,13 +2380,19 @@
                         showNotification(`ファイル「${file.name}」をテキストに変換しました`, 'success');
                     }
                 } else {
-                    const error = await response.json();
-                    showNotification(error.error || 'ファイルのアップロードに失敗しました', 'error');
+                    let errorMsg = 'ファイルのアップロードに失敗しました';
+                    try {
+                        const error = await response.json();
+                        errorMsg = error.error || errorMsg;
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
+                    }
+                    showNotification(errorMsg, 'error');
                 }
             } catch (error) {
-                showNotification('ファイルの処理中にエラーが発生しました', 'error');
+                console.error('Upload error:', error);
+                showNotification('ファイルの処理中にエラーが発生しました: ' + error.message, 'error');
             } finally {
-                hideTypingIndicator();
                 // Clear file input
                 event.target.value = '';
             }
